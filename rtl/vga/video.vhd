@@ -65,8 +65,14 @@ architecture rtl of video is
 	constant V_BLANK_ACTIVE	: std_logic := '1';
 	
 	type PaletType is array(15 downto 0) of std_logic_vector(23 downto 0);
-	-- init mit 1 funktioniert in ise nicht, Quartus kanns :P
+	type SpriteType is array(15 downto 0) of std_logic_vector(7 downto 0);
+	-- palette array
 	signal palette			: PaletType := (others => (others => '0'));
+	-- sprite config arrays
+	signal sp_x				: SpriteType := (others => (others => '0'));
+	signal sp_y				: SpriteType := (others => (others => '0'));
+	signal sp_nr			: SpriteType := (others => (others => '0'));
+	signal sp_attr			: SpriteType := (others => (others => '0'));
 
 	-- pipeline register
 	type reg is record
@@ -79,16 +85,21 @@ architecture rtl of video is
 		sync_v				: std_logic;
 		blank_h				: std_logic;
 		blank_v				: std_logic;
-		color					: std_logic_vector(3 downto 0);
+		color_ch				: std_logic_vector(3 downto 0);
+		color_sp				: std_logic_vector(3 downto 0);
+		sp_hit				: std_logic;
+		sp_nr					: std_logic_vector(3 downto 0);
+		sp_ix					: unsigned(7 downto 0);
+		sp_iy					: unsigned(7 downto 0);
 	end record;
 
-	signal s0 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'));
-	signal s1 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'));
-	signal s2 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'));
-	signal s3 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'));
-	signal s4 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'));
-	signal s5 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'));
-	signal s6 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'));
+	signal s0 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'), (others=>'0'), '0', (others=>'0'), (others=>'0'), (others=>'0'));
+	signal s1 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'), (others=>'0'), '0', (others=>'0'), (others=>'0'), (others=>'0'));
+	signal s2 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'), (others=>'0'), '0', (others=>'0'), (others=>'0'), (others=>'0'));
+	signal s3 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'), (others=>'0'), '0', (others=>'0'), (others=>'0'), (others=>'0'));
+	signal s4 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'), (others=>'0'), '0', (others=>'0'), (others=>'0'), (others=>'0'));
+	signal s5 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'), (others=>'0'), '0', (others=>'0'), (others=>'0'), (others=>'0'));
+	signal s6 : reg := ('0', (others=>'0'), (others=>'0'), (others=>'0'), (others=>'0'), '0', '0', '0', '0', (others=>'0'), (others=>'0'), '0', (others=>'0'), (others=>'0'), (others=>'0'));
 
 	-- counter
 	signal cnt_h			: unsigned(11 downto 0) := (others => '0');
@@ -124,10 +135,22 @@ begin
 		-- io writes
 		if cpuStatus = x"10" and cpuWR_n = '0' then
 			-- palette
-			if	cpuAddr(7 downto 4) = x"a" then
+			if		cpuAddr(7 downto 4) = x"a" then
 				tmp_pal_nr  <= cpuAddr(3 downto 0);
 				tmp_pal_cnt <= x"3";
 				palrom_adr  <= cpuDIn;
+			-- sprite position y
+			elsif	cpuAddr(7 downto 4) = x"4" then
+				sp_y(to_integer(unsigned(cpuAddr(3 downto 0)))) <= cpuDIn xor x"ff";
+			-- sprite position x
+			elsif	cpuAddr(7 downto 4) = x"5" then
+				sp_x(to_integer(unsigned(cpuAddr(3 downto 0)))) <= cpuDIn xor x"ff";
+			-- sprite number
+			elsif	cpuAddr(7 downto 4) = x"6" then
+				sp_nr(to_integer(unsigned(cpuAddr(3 downto 0)))) <= cpuDIn xor x"ff";
+			-- sprite attributes
+			elsif	cpuAddr(7 downto 4) = x"7" then
+				sp_attr(to_integer(unsigned(cpuAddr(3 downto 0)))) <= cpuDIn;
 			end if;
 		end if;
 		-- copy color from palette rom
@@ -197,15 +220,46 @@ begin
 			end if;
 			-- set video ram address, fetch tile nr, 10:0
 			ram_vid_adr <= std_logic_vector(b"0" & s1.pos_y(7 downto 3) & s1.pos_x(7 downto 3));
+			-- detect sprite hits
+			if		s1.pos_x >= unsigned(sp_x(0))  and s1.pos_x < unsigned(sp_x(0))+16  and s1.pos_y >= unsigned(sp_y(0))  and s1.pos_y < unsigned(sp_y(0))+16  then s2.sp_hit <= '1'; s2.sp_nr  <= x"0";	-- sprite 0
+			elsif	s1.pos_x >= unsigned(sp_x(1))  and s1.pos_x < unsigned(sp_x(1))+16  and s1.pos_y >= unsigned(sp_y(1))  and s1.pos_y < unsigned(sp_y(1))+16  then s2.sp_hit <= '1'; s2.sp_nr  <= x"1";	-- sprite 1
+			elsif	s1.pos_x >= unsigned(sp_x(2))  and s1.pos_x < unsigned(sp_x(2))+16  and s1.pos_y >= unsigned(sp_y(2))  and s1.pos_y < unsigned(sp_y(2))+16  then s2.sp_hit <= '1'; s2.sp_nr  <= x"2";	-- sprite 2
+			elsif	s1.pos_x >= unsigned(sp_x(3))  and s1.pos_x < unsigned(sp_x(3))+16  and s1.pos_y >= unsigned(sp_y(3))  and s1.pos_y < unsigned(sp_y(3))+16  then s2.sp_hit <= '1'; s2.sp_nr  <= x"3";	-- sprite 3
+			elsif	s1.pos_x >= unsigned(sp_x(4))  and s1.pos_x < unsigned(sp_x(4))+16  and s1.pos_y >= unsigned(sp_y(4))  and s1.pos_y < unsigned(sp_y(4))+16  then s2.sp_hit <= '1'; s2.sp_nr  <= x"4";	-- sprite 4
+			elsif	s1.pos_x >= unsigned(sp_x(5))  and s1.pos_x < unsigned(sp_x(5))+16  and s1.pos_y >= unsigned(sp_y(5))  and s1.pos_y < unsigned(sp_y(5))+16  then s2.sp_hit <= '1'; s2.sp_nr  <= x"5";	-- sprite 5
+			elsif	s1.pos_x >= unsigned(sp_x(6))  and s1.pos_x < unsigned(sp_x(6))+16  and s1.pos_y >= unsigned(sp_y(6))  and s1.pos_y < unsigned(sp_y(6))+16  then s2.sp_hit <= '1'; s2.sp_nr  <= x"6";	-- sprite 6
+			elsif	s1.pos_x >= unsigned(sp_x(7))  and s1.pos_x < unsigned(sp_x(7))+16  and s1.pos_y >= unsigned(sp_y(7))  and s1.pos_y < unsigned(sp_y(7))+16  then s2.sp_hit <= '1'; s2.sp_nr  <= x"7";	-- sprite 7
+			elsif	s1.pos_x >= unsigned(sp_x(8))  and s1.pos_x < unsigned(sp_x(8))+16  and s1.pos_y >= unsigned(sp_y(8))  and s1.pos_y < unsigned(sp_y(8))+16  then s2.sp_hit <= '1'; s2.sp_nr  <= x"8";	-- sprite 8
+			elsif	s1.pos_x >= unsigned(sp_x(9))  and s1.pos_x < unsigned(sp_x(9))+16  and s1.pos_y >= unsigned(sp_y(9))  and s1.pos_y < unsigned(sp_y(9))+16  then s2.sp_hit <= '1'; s2.sp_nr  <= x"9";	-- sprite 9
+			elsif	s1.pos_x >= unsigned(sp_x(10)) and s1.pos_x < unsigned(sp_x(10))+16 and s1.pos_y >= unsigned(sp_y(10)) and s1.pos_y < unsigned(sp_y(10))+16 then s2.sp_hit <= '1'; s2.sp_nr  <= x"a";	-- sprite a
+			elsif	s1.pos_x >= unsigned(sp_x(11)) and s1.pos_x < unsigned(sp_x(11))+16 and s1.pos_y >= unsigned(sp_y(11)) and s1.pos_y < unsigned(sp_y(11))+16 then s2.sp_hit <= '1'; s2.sp_nr  <= x"b";	-- sprite b
+			elsif	s1.pos_x >= unsigned(sp_x(12)) and s1.pos_x < unsigned(sp_x(12))+16 and s1.pos_y >= unsigned(sp_y(12)) and s1.pos_y < unsigned(sp_y(12))+16 then s2.sp_hit <= '1'; s2.sp_nr  <= x"c";	-- sprite c
+			elsif	s1.pos_x >= unsigned(sp_x(13)) and s1.pos_x < unsigned(sp_x(13))+16 and s1.pos_y >= unsigned(sp_y(13)) and s1.pos_y < unsigned(sp_y(13))+16 then s2.sp_hit <= '1'; s2.sp_nr  <= x"d";	-- sprite d
+			elsif	s1.pos_x >= unsigned(sp_x(14)) and s1.pos_x < unsigned(sp_x(14))+16 and s1.pos_y >= unsigned(sp_y(14)) and s1.pos_y < unsigned(sp_y(14))+16 then s2.sp_hit <= '1'; s2.sp_nr  <= x"e";	-- sprite e
+			elsif	s1.pos_x >= unsigned(sp_x(15)) and s1.pos_x < unsigned(sp_x(15))+16 and s1.pos_y >= unsigned(sp_y(15)) and s1.pos_y < unsigned(sp_y(15))+16 then s2.sp_hit <= '1'; s2.sp_nr  <= x"f";	-- sprite f
+			else
+				s2.sp_hit <= '0';
+				s2.sp_nr  <= x"0";
+			end if;
 		end if;
 		-- stage 2
 		s3 <= s2;
 		if s2.do_stuff = '1' then
+			-- calc position in sprite
+			if s2.sp_hit = '1' then
+				s3.sp_ix <= s2.pos_x(7 downto 0) - unsigned(sp_x(to_integer(unsigned(s2.sp_nr))));
+				s3.sp_iy <= s2.pos_y(7 downto 0) - unsigned(sp_y(to_integer(unsigned(s2.sp_nr))));
+			end if;
 		end if;
 		-- stage 3
 		s4 <= s3;
 		if s3.do_stuff = '1' then
+			-- set address in char ram
 			ram_char_adr <= ram_vid_data & std_logic_vector(s3.pos_y(2 downto 0));
+			-- set address in sprite rom
+			if s3.sp_hit = '1' then
+				sprom_adr <= s3.sp_ix(3) & sp_nr(to_integer(unsigned(s3.sp_nr))) & std_logic_vector(s3.sp_iy(3 downto 0));
+			end if;
 		end if;
 		-- stage 4
 		s5 <= s4;
@@ -214,23 +268,42 @@ begin
 		-- stage 5
 		s6 <= s5;
 		if s5.do_stuff = '1' then
-			if		s5.pos_x(2 downto 0) = b"000" then s6.color <= ram_char3_data(7) & ram_char2_data(7) & ram_char1_data(7) & ram_char0_data(7);
-			elsif	s5.pos_x(2 downto 0) = b"001" then s6.color <= ram_char3_data(6) & ram_char2_data(6) & ram_char1_data(6) & ram_char0_data(6);
-			elsif	s5.pos_x(2 downto 0) = b"010" then s6.color <= ram_char3_data(5) & ram_char2_data(5) & ram_char1_data(5) & ram_char0_data(5);
-			elsif	s5.pos_x(2 downto 0) = b"011" then s6.color <= ram_char3_data(4) & ram_char2_data(4) & ram_char1_data(4) & ram_char0_data(4);
-			elsif	s5.pos_x(2 downto 0) = b"100" then s6.color <= ram_char3_data(3) & ram_char2_data(3) & ram_char1_data(3) & ram_char0_data(3);
-			elsif	s5.pos_x(2 downto 0) = b"101" then s6.color <= ram_char3_data(2) & ram_char2_data(2) & ram_char1_data(2) & ram_char0_data(2);
-			elsif	s5.pos_x(2 downto 0) = b"110" then s6.color <= ram_char3_data(1) & ram_char2_data(1) & ram_char1_data(1) & ram_char0_data(1);
-			elsif	s5.pos_x(2 downto 0) = b"111" then s6.color <= ram_char3_data(0) & ram_char2_data(0) & ram_char1_data(0) & ram_char0_data(0);
+			-- chars
+			if		s5.pos_x(2 downto 0) = b"000" then s6.color_ch <= ram_char3_data(7) & ram_char2_data(7) & ram_char1_data(7) & ram_char0_data(7);
+			elsif	s5.pos_x(2 downto 0) = b"001" then s6.color_ch <= ram_char3_data(6) & ram_char2_data(6) & ram_char1_data(6) & ram_char0_data(6);
+			elsif	s5.pos_x(2 downto 0) = b"010" then s6.color_ch <= ram_char3_data(5) & ram_char2_data(5) & ram_char1_data(5) & ram_char0_data(5);
+			elsif	s5.pos_x(2 downto 0) = b"011" then s6.color_ch <= ram_char3_data(4) & ram_char2_data(4) & ram_char1_data(4) & ram_char0_data(4);
+			elsif	s5.pos_x(2 downto 0) = b"100" then s6.color_ch <= ram_char3_data(3) & ram_char2_data(3) & ram_char1_data(3) & ram_char0_data(3);
+			elsif	s5.pos_x(2 downto 0) = b"101" then s6.color_ch <= ram_char3_data(2) & ram_char2_data(2) & ram_char1_data(2) & ram_char0_data(2);
+			elsif	s5.pos_x(2 downto 0) = b"110" then s6.color_ch <= ram_char3_data(1) & ram_char2_data(1) & ram_char1_data(1) & ram_char0_data(1);
+			elsif	s5.pos_x(2 downto 0) = b"111" then s6.color_ch <= ram_char3_data(0) & ram_char2_data(0) & ram_char1_data(0) & ram_char0_data(0);
+			end if;
+			-- sprites
+			if		s5.sp_ix(2 downto 0) = b"000" then s6.color_sp <= sprom_a6_data(7) & sprom_a5_data(7) & sprom_a3_data(7) & sprom_a2_data(7);
+			elsif	s5.sp_ix(2 downto 0) = b"001" then s6.color_sp <= sprom_a6_data(6) & sprom_a5_data(6) & sprom_a3_data(6) & sprom_a2_data(6);
+			elsif	s5.sp_ix(2 downto 0) = b"010" then s6.color_sp <= sprom_a6_data(5) & sprom_a5_data(5) & sprom_a3_data(5) & sprom_a2_data(5);
+			elsif	s5.sp_ix(2 downto 0) = b"011" then s6.color_sp <= sprom_a6_data(4) & sprom_a5_data(4) & sprom_a3_data(4) & sprom_a2_data(4);
+			elsif	s5.sp_ix(2 downto 0) = b"100" then s6.color_sp <= sprom_a6_data(3) & sprom_a5_data(3) & sprom_a3_data(3) & sprom_a2_data(3);
+			elsif	s5.sp_ix(2 downto 0) = b"101" then s6.color_sp <= sprom_a6_data(2) & sprom_a5_data(2) & sprom_a3_data(2) & sprom_a2_data(2);
+			elsif	s5.sp_ix(2 downto 0) = b"110" then s6.color_sp <= sprom_a6_data(1) & sprom_a5_data(1) & sprom_a3_data(1) & sprom_a2_data(1);
+			elsif	s5.sp_ix(2 downto 0) = b"111" then s6.color_sp <= sprom_a6_data(0) & sprom_a5_data(0) & sprom_a3_data(0) & sprom_a2_data(0);
 			end if;
 		end if;
 		-- stage 6
 		-- turn on/off video output
 		ce_pix <= s6.do_stuff;
 		if s6.do_stuff = '1' then
-			vgaRed    <= palette(to_integer(unsigned(s6.color)))(23 downto 16);
-			vgaGreen  <= palette(to_integer(unsigned(s6.color)))(15 downto 8);
-			vgaBlue   <= palette(to_integer(unsigned(s6.color)))(7 downto 0);
+			if s6.sp_hit = '1' and s6.color_sp /= x"f" then
+				-- draw sprite
+				vgaRed    <= palette(to_integer(unsigned(s6.color_sp)))(23 downto 16);
+				vgaGreen  <= palette(to_integer(unsigned(s6.color_sp)))(15 downto 8);
+				vgaBlue   <= palette(to_integer(unsigned(s6.color_sp)))(7 downto 0);
+			else
+				-- draw char
+				vgaRed    <= palette(to_integer(unsigned(s6.color_ch)))(23 downto 16);
+				vgaGreen  <= palette(to_integer(unsigned(s6.color_ch)))(15 downto 8);
+				vgaBlue   <= palette(to_integer(unsigned(s6.color_ch)))(7 downto 0);
+			end if;
 			vgaHSync  <= s6.sync_h;
 			vgaVSync  <= s6.sync_v;
 			vgaHBlank <= s6.blank_h;

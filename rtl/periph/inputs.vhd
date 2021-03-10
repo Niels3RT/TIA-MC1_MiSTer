@@ -55,15 +55,24 @@ begin
 				-- in0
 				if	cpuAddr(7 downto 0) = x"d0" then
 					io_out    <= x"00";
+					io_out(1) <= joystick_0(0);	-- joystick right
+					io_out(5) <= joystick_0(1);	-- joystick left
 				end if;
 				-- in1
 				if	cpuAddr(7 downto 0) = x"d1" then
 					io_out    <= x"00";
+					io_out(1) <= joystick_0(3);	-- joystick up
+					io_out(5) <= joystick_0(2);	-- joystick down
 				end if;
 				-- in2
 				if	cpuAddr(7 downto 0) = x"d2" then
 					io_out    <= x"00";
-					io_out(7) <= VBlank;	-- vblank
+					io_out(1) <= '1';					-- coin lockout
+					io_out(3) <= '1';					-- ???
+					io_out(4) <= joystick_0(6);	-- coin
+					io_out(5) <= joystick_0(4);	-- joystick button 1
+					io_out(6) <= joystick_0(5);	-- joystick button 2
+					io_out(7) <= VBlank;				-- vblank
 				end if;
 			end if;
 		end if;
