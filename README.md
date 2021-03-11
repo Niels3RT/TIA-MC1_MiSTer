@@ -10,4 +10,4 @@ A short [video of the arcade in action](https://www.youtube.com/watch?v=bwcVSt5q
 
 ## The MiSTer Core
 
-There is a lot of things missing (sprites support is incomplete, no sound), the core is playable but incomplete.
+There is a lot of things missing (no sound), the core is playable but incomplete.
