@@ -164,14 +164,22 @@ begin
 --	USER_OUT(4) <= cpuAddr(14);
 --	USER_OUT(5) <= cpuAddr(15);
 
-	USER_OUT(0) <= TMP_DBG(0);
-	USER_OUT(1) <= TMP_DBG(1);
-	USER_OUT(2) <= TMP_DBG(2);
-	USER_OUT(3) <= TMP_DBG(3);
-	USER_OUT(4) <= TMP_DBG(4);
-	USER_OUT(5) <= TMP_DBG(5);
+--	USER_OUT(0) <= TMP_DBG(0);
+--	USER_OUT(1) <= TMP_DBG(1);
+--	USER_OUT(2) <= TMP_DBG(2);
+--	USER_OUT(3) <= TMP_DBG(3);
+--	USER_OUT(4) <= TMP_DBG(4);
+--	USER_OUT(5) <= TMP_DBG(5);
 
-	USER_OUT(6) <= cpuSync;
+	USER_OUT(0) <= VSync_t;
+	USER_OUT(1) <= HSync_t;
+	USER_OUT(2) <= HBlank_t;
+	USER_OUT(3) <= VBlank_t;
+	USER_OUT(4) <= '1';
+	USER_OUT(5) <= '1';
+	USER_OUT(6) <= '1';
+	
+	--USER_OUT(6) <= cpuSync;
 	
 	HBlank <= HBlank_t;
 	HSync  <= HSync_t;
@@ -344,5 +352,19 @@ begin
 			cpuDBin		=> cpuDBin,
 			joystick_0	=> joystick_0,
 			VBlank		=> VBlank_t
+		);
+		
+	-- audio
+	audio : entity work.audio
+		port map (
+			clk_sys		=> clk_sys,
+			clk_audio	=> clk_audio,
+			reset_n		=> cpuReset_n,
+			AUDIO_L		=> AUDIO_L,
+			AUDIO_R		=> AUDIO_R
+--			cpuAddr		=> cpuAddr(7 downto 0),
+--			cpuDin		=> cpuDataOut,
+--			cpuStatus	=> cpuStatus,
+--			cpuDBin		=> cpuDBin,
 		);
 end;

@@ -27,69 +27,44 @@ use IEEE.numeric_std.all;
 
 entity audio is 
 	port (
-		clk				: in  std_logic;		-- 24.576 MHz
+		clk_sys			: in  std_logic;
+		clk_audio		: in  std_logic;		-- 24.576 MHz
 		reset_n			: in  std_logic;
 		
 		AUDIO_L			: out std_logic_vector(15 downto 0);
-		AUDIO_R			: out std_logic_vector(15 downto 0);
-		
-		audioEn_n		: in  std_logic;
-		tapeEn			: in  std_logic;
-		
-		tape_out			: in  std_logic;
-		
-		pioB				: in  std_logic_vector(7 downto 0);
-		
-		ctcTcTo			: in  std_logic_vector(1 downto 0)
+		AUDIO_R			: out std_logic_vector(15 downto 0)
 	);
 end audio;
 
 	architecture rtl of audio is
 		signal divide_frq		: unsigned(16 downto 0) := (others => '0');
 		
-		signal ctc_to_a		: std_logic_vector(1 downto 0);
-		signal ctc_to_b		: std_logic_vector(1 downto 0);
-		signal ctc_to			: std_logic_vector(1 downto 0);
-		signal tape_out_a		: std_logic := '0';
-		signal tape_out_b		: std_logic := '0';
-		signal tape_out_sig	: std_logic := '0';
-		
 		signal level			: std_logic_vector(1 downto 0) := (others => '0');
-		signal tape_out_old	: std_logic := '0';
-		signal ctcTcTo_old	: std_logic_vector(1 downto 0) := (others => '0');
 		
 		signal sig_noise		: std_logic_vector(1 downto 0) := (others => '0');
 	
 begin
 	process
 	begin
-		wait until rising_edge(clk);
+		wait until rising_edge(clk_audio);
 		
-		-- cross clocks
-		ctc_to_a    <= ctcTcTo;
-		ctc_to_b    <= ctc_to_a;
-		ctc_to      <= ctc_to_b;
-		tape_out_a   <= tape_out;
-		tape_out_b   <= tape_out_a;
-		tape_out_sig <= tape_out_b;
-		
-		-- detect audio
-		-- tape
-		if tape_out_old /= tape_out_sig and tape_out_sig = '1' and tapeEn = '1' then
-			sig_noise(1) <= '1';
-		end if;
-		tape_out_old <= tape_out_sig;
-		-- audio out 0
-		if ctcTcTo_old(0) /= ctc_to(0) and ctc_to(0) = '1' and audioEn_n = '0' then
-			sig_noise(0) <= '1';
-		end if;
-		ctcTcTo_old(0) <= ctc_to(0);
-		-- audio out 1
-		if ctcTcTo_old(1) /= ctc_to(1) and ctc_to(1) = '1' and audioEn_n = '0' then
-			sig_noise(1) <= '1';
-		end if;
-		ctcTcTo_old(1) <= ctc_to(1);
-		
+--		-- detect audio
+--		-- tape
+--		if tape_out_old /= tape_out_sig and tape_out_sig = '1' and tapeEn = '1' then
+--			sig_noise(1) <= '1';
+--		end if;
+--		tape_out_old <= tape_out_sig;
+--		-- audio out 0
+--		if ctcTcTo_old(0) /= ctc_to(0) and ctc_to(0) = '1' and audioEn_n = '0' then
+--			sig_noise(0) <= '1';
+--		end if;
+--		ctcTcTo_old(0) <= ctc_to(0);
+--		-- audio out 1
+--		if ctcTcTo_old(1) /= ctc_to(1) and ctc_to(1) = '1' and audioEn_n = '0' then
+--			sig_noise(1) <= '1';
+--		end if;
+--		ctcTcTo_old(1) <= ctc_to(1);
+--		
 --		-- play audio
 		divide_frq <= divide_frq + 1;
 		if divide_frq(4 downto 0) = b"00000" then

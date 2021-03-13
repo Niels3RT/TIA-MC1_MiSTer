@@ -187,8 +187,8 @@ begin
 		
 		-- reset
 		if reset_n = '0' then
-			cnt_h	    <= (others => '0');
-			cnt_v     <= (others => '0');
+			--cnt_h	    <= (others => '0');
+			--cnt_v     <= (others => '0');
 		else
 			-- tick vid
 			if tick_vid = '1' then
@@ -198,7 +198,7 @@ begin
 				else
 					cnt_h <= x"000";
 					-- vsync counter
-					if cnt_v < 313 then
+					if cnt_v < 312 then
 						cnt_v <= cnt_v + 1;
 					else
 						cnt_v <= x"000";
@@ -219,7 +219,7 @@ begin
 		-- stage 0
 		s1 <= s0;
 		if s0.do_stuff = '1' then
-			s1.pos_x <= s0.cnt_h - 30;
+			s1.pos_x <= s0.cnt_h - 66; -- too far
 			s1.pos_y <= s0.cnt_v - 6;
 			-- horizontal sync
 			if s0.cnt_h < 20 then
