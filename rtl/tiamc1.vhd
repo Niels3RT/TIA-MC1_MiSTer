@@ -253,7 +253,6 @@ begin
 			cpuDBin		=> cpuDBin,
 
 			cpuEn			=> cpuEn,
-			--cpuWait		=> cpuWait,
 			
 			ram_vid_adr    => ram_vid_adr,
 			ram_vid_data   => ram_vid_data,
@@ -269,7 +268,6 @@ begin
 	-- CPU data-in multiplexer
 	cpuDataIn <= 
 			ioDataOut		when cpuStatus = x"42" and cpuDBin = '1' else
-			--ioDataOut		when cpuStatus = x"42" else
 			memDataOut;
 
 	-- T8080 CPU
@@ -349,6 +347,8 @@ begin
 			cpuWR_n		=> cpuWR_n,
 			cpuStatus	=> cpuStatus,
 			cpuAddr		=> cpuAddr,
-			cpuDIn		=> cpuDataOut
+			cpuDIn		=> cpuDataOut,
+			
+			TMP_DBG		=> TMP_DBG
 		);
 end;

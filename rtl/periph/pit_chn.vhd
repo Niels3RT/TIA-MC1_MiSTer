@@ -44,13 +44,18 @@ entity pit_channel is
 end pit_channel;
 
 architecture rtl of pit_channel is
-	type   state_type is ( stopped, running, load_high, load_low, load_both_high, load_both_low, load_complete );
+	type   state_type is ( stopped, running, load_start, load_complete );
+	type   load_type is ( load_high, load_low, load_both );
+	type   load_state_type is ( load_both_high, load_both_low );
 	signal state  			: state_type := stopped;
+	signal load_mode		: load_type := load_both;
+	signal load_state		: load_state_type := load_both_low;
 	signal count			: unsigned(15 downto 0) := (others => '0');
 	signal count_default	: unsigned(15 downto 0) := (others => '0');
 	signal mode				: std_logic_vector(2 downto 0);
 	signal gate_in_old	: std_logic;
 	signal load_cnt_old	: std_logic;
+	signal set_mode_old	: std_logic;
 	
 begin
 	process
@@ -94,7 +99,7 @@ begin
 						if count = 0 then
 							count	<= count_default;
 						end if;
-						if count > b"0" & count_default(15 downto 1) then
+						if count_default > 20 and count > b"0" & count_default(15 downto 1) then
 							counter_out	<= '1';
 						else
 							counter_out	<= '0';
@@ -123,19 +128,24 @@ begin
 			end if;
 				
 			-- operate at cpu clock rate
-			-- update mode
-			if set_mode = '1' then
+			-- update mode on rising edge
+			set_mode_old <= set_mode;
+			if set_mode = '1' and set_mode_old = '0' then
 				mode <= mode_in(3 downto 1);
 				-- start loading counter bytes
 				if 	mode_in(5 downto 4) = b"10" then
 					-- load upper byte
-					state <= load_high;
+					state      <= load_start;
+					load_mode  <= load_high;
 				elsif mode_in(5 downto 4) = b"01" then
 					-- load lower byte
-					state <= load_low;
+					state      <= load_start;
+					load_mode  <= load_low;
 				elsif mode_in(5 downto 4) = b"11" then
 					-- load lower byte first, then upper
-					state <= load_both_low;
+					state      <= load_start;
+					load_mode  <= load_both;
+					load_state <= load_both_low;
 				else
 					-- latch comand for read, ignore
 					--state <= stopped;
@@ -156,23 +166,26 @@ begin
 			-- load counter on rising edge
 			load_cnt_old <= load_cnt;
 			if load_cnt = '1' and load_cnt_old = '0' then
-				case state is
+				case load_mode is
 					when load_high =>
-						count								<= unsigned(cnt_in & x"00");
-						count_default					<= unsigned(cnt_in & x"00");
-						state <= load_complete;
-					when load_both_high =>
-						count(15 downto 8)			<= unsigned(cnt_in);
-						count_default(15 downto 8) <= unsigned(cnt_in);
-						state <= load_complete;
+						count				<= unsigned(cnt_in & x"00");
+						count_default	<= unsigned(cnt_in & x"00");
+						state				<= load_complete;
 					when load_low =>
-						count								<= unsigned(x"00" & cnt_in);
-						count_default					<= unsigned(x"00" & cnt_in);
-						state <= load_complete;
-					when load_both_low =>
-						count(7 downto 0)				<= unsigned(cnt_in);
-						count_default(7 downto 0)	<= unsigned(cnt_in);
-						state <= load_both_high;
+						count				<= unsigned(x"00" & cnt_in);
+						count_default	<= unsigned(x"00" & cnt_in);
+						state				<= load_complete;
+					when load_both =>
+						if load_state = load_both_low then
+							count(7 downto 0)				<= unsigned(cnt_in);
+							count_default(7 downto 0)	<= unsigned(cnt_in);
+							load_state						<= load_both_high;
+						else
+							count(15 downto 8)			<= unsigned(cnt_in);
+							count_default(15 downto 8)	<= unsigned(cnt_in);
+							load_state 						<= load_both_low;
+							state								<= load_complete;
+						end if;
 					when others =>
 					end case;
 			end if;

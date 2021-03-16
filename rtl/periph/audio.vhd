@@ -38,7 +38,9 @@ entity audio is
 		cpuWR_n			: in  std_logic;
 		cpuStatus		: in  std_logic_vector(7 downto 0);
 		cpuAddr			: in  std_logic_vector(15 downto 0);
-		cpuDIn			: in  std_logic_vector(7 downto 0)
+		cpuDIn			: in  std_logic_vector(7 downto 0);
+		
+		TMP_DBG			: out std_logic_vector(7 downto 0)
 	);
 end audio;
 
@@ -71,7 +73,7 @@ begin
 		set_mode <= (others => '0');
 
 		-- io writes
-		if cpuStatus = x"10" and cpuWR_n = '0' then
+		if cpuStatus = x"10" and cpuWR_n = '0' and tick_cpu = '1' then
 			-- fill temp registers
 			--tmp_count <= cpuDIn;
 			tmp_mode  <= cpuDIn(5 downto 0);
@@ -79,6 +81,9 @@ begin
 			if		cpuAddr(7 downto 0) = x"c0" then
 				load_cnt  <= b"000001";
 				tmp_count <= cpuDIn;
+--				if cpuDIn /= x"00" then
+--					TMP_DBG   <= cpuDIn;
+--				end if;
 			-- 1st 8253, load counter 1
 			elsif	cpuAddr(7 downto 0) = x"c1" then
 				load_cnt <= b"000010";
@@ -155,6 +160,12 @@ begin
 			tick_clk(4) <= '1';
 			tick_clk(5) <= '1';
 		end if;
+		
+		-- DEBUG out
+--		TMP_DBG(2 downto 0) <= counter_out(2 downto 0);
+--		TMP_DBG(4 downto 3) <= counter_gate(1 downto 0);
+--		TMP_DBG(5) <= audio_out_a;
+--		TMP_DBG(6) <= audio_out_a;
 	end process;
 	
 	-- audio output process

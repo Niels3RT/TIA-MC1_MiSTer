@@ -72,7 +72,8 @@ begin
 					io_out(4) <= joystick_0(6);	-- coin
 					io_out(5) <= joystick_0(4);	-- joystick button 1
 					io_out(6) <= joystick_0(5);	-- joystick button 2
-					io_out(7) <= VBlank;				-- vblank
+					io_out(7) <= VBlank;				-- vblank (waits for 0!)
+					--io_out(7) <= '0';				-- vblank
 				end if;
 			end if;
 		end if;

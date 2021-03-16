@@ -4,7 +4,11 @@
 			"name" : "Top",
 			"pins" : [
 				{
-					"name" : "HDMI_I2S",
+					"name" : "HDMI_I2C_SCL",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_HS",
 					"strict" : false
 				},
 				{
@@ -36,10 +40,6 @@
 					"strict" : false
 				},
 				{
-					"name" : "LED[6]",
-					"strict" : false
-				},
-				{
 					"name" : "HDMI_SCLK",
 					"strict" : false
 				},
@@ -48,7 +48,7 @@
 					"strict" : false
 				},
 				{
-					"name" : "HDMI_I2C_SCL",
+					"name" : "HDMI_I2S",
 					"strict" : false
 				},
 				{
@@ -149,10 +149,6 @@
 				},
 				{
 					"name" : "HDMI_TX_D[23]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_HS",
 					"strict" : false
 				},
 				{
@@ -260,7 +256,15 @@
 					"strict" : false
 				},
 				{
+					"name" : "LED[6]",
+					"strict" : false
+				},
+				{
 					"name" : "LED[7]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_I2C_SDA",
 					"strict" : false
 				},
 				{
@@ -288,7 +292,7 @@
 					"strict" : false
 				},
 				{
-					"name" : "HDMI_I2C_SDA",
+					"name" : "SW[3]",
 					"strict" : false
 				},
 				{
@@ -296,11 +300,7 @@
 					"strict" : false
 				},
 				{
-					"name" : "SW[3]",
-					"strict" : false
-				},
-				{
-					"name" : "SW[0]",
+					"name" : "FPGA_CLK1_50",
 					"strict" : false
 				},
 				{
@@ -308,7 +308,7 @@
 					"strict" : false
 				},
 				{
-					"name" : "FPGA_CLK1_50",
+					"name" : "SW[0]",
 					"strict" : false
 				},
 				{
@@ -316,7 +316,7 @@
 					"strict" : false
 				},
 				{
-					"name" : "SW[1]",
+					"name" : "HDMI_TX_INT",
 					"strict" : false
 				},
 				{
@@ -333,10 +333,6 @@
 				},
 				{
 					"name" : "KEY[1]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_INT",
 					"strict" : false
 				}
 			]
