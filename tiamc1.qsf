@@ -118,4 +118,5 @@ set_global_assignment -name VHDL_FILE roms/a6.r07.vhdl
 set_global_assignment -name VHDL_FILE roms/a5.l07.vhdl
 set_global_assignment -name VHDL_FILE roms/a3.g07.vhdl
 set_global_assignment -name VHDL_FILE roms/a2.b07.vhdl
+set_global_assignment -name VHDL_FILE rtl/periph/pit_chn.vhd
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top

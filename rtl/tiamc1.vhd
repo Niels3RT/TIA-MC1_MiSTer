@@ -131,7 +131,7 @@ architecture struct of tiamc1 is
 	signal VBlank_t			: std_logic;
 	signal VSync_t				: std_logic;
 	
-	signal TMP_DBG				: std_logic_vector(7 downto 0);
+	signal TMP_DBG				: std_logic_vector(7 downto 0) := (others => '1');
 
 begin
 
@@ -164,20 +164,20 @@ begin
 --	USER_OUT(4) <= cpuAddr(14);
 --	USER_OUT(5) <= cpuAddr(15);
 
---	USER_OUT(0) <= TMP_DBG(0);
---	USER_OUT(1) <= TMP_DBG(1);
---	USER_OUT(2) <= TMP_DBG(2);
---	USER_OUT(3) <= TMP_DBG(3);
---	USER_OUT(4) <= TMP_DBG(4);
---	USER_OUT(5) <= TMP_DBG(5);
+	USER_OUT(0) <= TMP_DBG(0);
+	USER_OUT(1) <= TMP_DBG(1);
+	USER_OUT(2) <= TMP_DBG(2);
+	USER_OUT(3) <= TMP_DBG(3);
+	USER_OUT(4) <= TMP_DBG(4);
+	USER_OUT(5) <= TMP_DBG(5);
 
-	USER_OUT(0) <= VSync_t;
-	USER_OUT(1) <= HSync_t;
-	USER_OUT(2) <= HBlank_t;
-	USER_OUT(3) <= VBlank_t;
-	USER_OUT(4) <= '1';
-	USER_OUT(5) <= '1';
-	USER_OUT(6) <= '1';
+--	USER_OUT(0) <= VSync_t;
+--	USER_OUT(1) <= HSync_t;
+--	USER_OUT(2) <= HBlank_t;
+--	USER_OUT(3) <= VBlank_t;
+--	USER_OUT(4) <= '1';
+--	USER_OUT(5) <= '1';
+--	USER_OUT(6) <= '1';
 	
 	--USER_OUT(6) <= cpuSync;
 	
@@ -261,9 +261,9 @@ begin
 			ram_char0_data => ram_char0_data,
 			ram_char1_data => ram_char1_data,
 			ram_char2_data => ram_char2_data,
-			ram_char3_data => ram_char3_data,
+			ram_char3_data => ram_char3_data
 			
-			out_dbg		=> TMP_DBG
+			--out_dbg		=> TMP_DBG
 		);
 
 	-- CPU data-in multiplexer
@@ -313,24 +313,6 @@ begin
 			cpuMEMR <= cpuDataOut(7);
 		end if;
 	end process;
-		
---	-- interrupt controller
---	intController : entity work.intController
---		generic map (
---			NUMINTS => NUMINTS
---		)
---		port map (
---			clk			=> clk_sys,
---			res_n			=> cpuReset_n,
---			int_n			=> cpuInt_n,
---			intPeriph	=> intPeriph,
---			intAck		=> intAckPeriph,
---			m1_n			=> cpuM1,
---			iorq_n		=> cpuIorq_n,
---			rd_n			=> cpuRD_n,
---			reti_n		=> cpuRETI_n,
---			intEna_n		=> cpuIntEna_n
---		);
 	
 	-- system clocks/ticks
 	sysclock : entity work.sysclock
@@ -358,13 +340,15 @@ begin
 	audio : entity work.audio
 		port map (
 			clk_sys		=> clk_sys,
+			tick_cpu		=> tick_cpu,
 			clk_audio	=> clk_audio,
 			reset_n		=> cpuReset_n,
 			AUDIO_L		=> AUDIO_L,
-			AUDIO_R		=> AUDIO_R
---			cpuAddr		=> cpuAddr(7 downto 0),
---			cpuDin		=> cpuDataOut,
---			cpuStatus	=> cpuStatus,
---			cpuDBin		=> cpuDBin,
+			AUDIO_R		=> AUDIO_R,
+			
+			cpuWR_n		=> cpuWR_n,
+			cpuStatus	=> cpuStatus,
+			cpuAddr		=> cpuAddr,
+			cpuDIn		=> cpuDataOut
 		);
 end;

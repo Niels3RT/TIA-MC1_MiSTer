@@ -49,9 +49,9 @@ entity memcontrol is
 		ram_char0_data	: out std_logic_vector(7 downto 0);
 		ram_char1_data	: out std_logic_vector(7 downto 0);
 		ram_char2_data	: out std_logic_vector(7 downto 0);
-		ram_char3_data	: out std_logic_vector(7 downto 0);
+		ram_char3_data	: out std_logic_vector(7 downto 0)
 		
-		out_dbg			: out std_logic_vector(7 downto 0)
+		--out_dbg			: out std_logic_vector(7 downto 0)
 	);
 end memcontrol;
 
@@ -99,7 +99,7 @@ begin
 		--cpuWait	<= '1';
 		cpuEn		<= '0';
 		
-		out_dbg <= bs_ctrl;
+		--out_dbg <= bs_ctrl;
 		
 		if reset_n = '0' then
 			mem_state <= idle;

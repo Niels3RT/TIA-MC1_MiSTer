@@ -28,56 +28,170 @@ use IEEE.numeric_std.all;
 entity audio is 
 	port (
 		clk_sys			: in  std_logic;
+		tick_cpu			: in  std_logic;
 		clk_audio		: in  std_logic;		-- 24.576 MHz
 		reset_n			: in  std_logic;
 		
 		AUDIO_L			: out std_logic_vector(15 downto 0);
-		AUDIO_R			: out std_logic_vector(15 downto 0)
+		AUDIO_R			: out std_logic_vector(15 downto 0);
+		
+		cpuWR_n			: in  std_logic;
+		cpuStatus		: in  std_logic_vector(7 downto 0);
+		cpuAddr			: in  std_logic_vector(15 downto 0);
+		cpuDIn			: in  std_logic_vector(7 downto 0)
 	);
 end audio;
 
-	architecture rtl of audio is
-		signal divide_frq		: unsigned(16 downto 0) := (others => '0');
-		
-		signal level			: std_logic_vector(1 downto 0) := (others => '0');
-		
-		signal sig_noise		: std_logic_vector(1 downto 0) := (others => '0');
+architecture rtl of audio is
+	-- audio signals
+	signal audio_out_a	: std_logic;
+	signal audio_out_b	: std_logic;
+	signal audio_out		: std_logic;
+	
+	-- channel components
+	signal tick_clk		: std_logic_vector(5 downto 0);
+	signal load_cnt		: std_logic_vector(5 downto 0);
+	signal set_mode		: std_logic_vector(5 downto 0);
+	signal tmp_mode		: std_logic_vector(5 downto 0);
+	signal tmp_count		: std_logic_vector(7 downto 0);
+	signal counter_gate	: std_logic_vector(5 downto 0);
+	signal counter_out	: std_logic_vector(5 downto 0);
+	
+	-- clock divide
+	signal div_clk			: unsigned(11 downto 0) := (others => '0');
 	
 begin
-	process
+	-- control process
+	ctrl_in : process
+	begin
+		wait until rising_edge(clk_sys);
+		
+		-- defaults
+		load_cnt <= (others => '0');
+		set_mode <= (others => '0');
+
+		-- io writes
+		if cpuStatus = x"10" and cpuWR_n = '0' then
+			-- fill temp registers
+			--tmp_count <= cpuDIn;
+			tmp_mode  <= cpuDIn(5 downto 0);
+			-- 1st 8253, load counter 0
+			if		cpuAddr(7 downto 0) = x"c0" then
+				load_cnt  <= b"000001";
+				tmp_count <= cpuDIn;
+			-- 1st 8253, load counter 1
+			elsif	cpuAddr(7 downto 0) = x"c1" then
+				load_cnt <= b"000010";
+				tmp_count <= cpuDIn;
+			-- 1st 8253, load counter 2
+			elsif	cpuAddr(7 downto 0) = x"c2" then
+				load_cnt <= b"000100";
+				tmp_count <= cpuDIn;
+			-- 1st 8253, mode word
+			elsif	cpuAddr(7 downto 0) = x"c3" then
+				if		cpuDIn(7 downto 6) = b"00" then
+					-- channel 0
+					set_mode <= b"000001";
+				elsif	cpuDIn(7 downto 6) = b"01" then
+					-- channel 1
+					set_mode <= b"000010";
+				elsif	cpuDIn(7 downto 6) = b"10" then
+					-- channel 2
+					set_mode <= b"000100";
+				end if;
+			-- 2nd 8253, load counter 0
+			elsif	cpuAddr(7 downto 0) = x"d4" then
+				load_cnt <= b"001000";
+				tmp_count <= cpuDIn;
+			-- 2nd 8253, load counter 1
+			elsif	cpuAddr(7 downto 0) = x"d5" then
+				load_cnt <= b"010000";
+				tmp_count <= cpuDIn;
+			-- 2nd 8253, load counter 2
+			elsif	cpuAddr(7 downto 0) = x"d6" then
+				load_cnt <= b"100000";
+				tmp_count <= cpuDIn;
+			-- 2nd 8253, mode word
+			elsif	cpuAddr(7 downto 0) = x"d7" then
+				if		cpuDIn(7 downto 6) = b"00" then
+					-- channel 0
+					set_mode <= b"001000";
+				elsif	cpuDIn(7 downto 6) = b"01" then
+					-- channel 1
+					set_mode <= b"010000";
+				elsif	cpuDIn(7 downto 6) = b"10" then
+					-- channel 2
+					set_mode <= b"100000";
+				end if;
+			-- 2nd 8253, gate control (will be written to b00000111 afaik)
+			elsif	cpuAddr(7 downto 0) = x"da" then
+				counter_gate(5 downto 3) <= cpuDIn(2 downto 0);
+			end if;
+		end if;
+		
+		-- handle gates
+		-- timer 0 gates come from timer 1 outputs
+		counter_gate(0) <= counter_out(3);
+		counter_gate(1) <= counter_out(4);
+		counter_gate(2) <= counter_out(5);
+		
+		-- finalize audio output
+		audio_out_a <= (counter_out(0) xor counter_out(1)) and counter_out(2);
+		
+		-- pass clock ticks to timers
+		-- timer 0 to 2 work on cpu frequency
+		tick_clk(0) <= tick_cpu;
+		tick_clk(1) <= tick_cpu;
+		tick_clk(2) <= tick_cpu;
+		-- timer 3 to 5 work on 7812 Hz ticks (31,5 MHz / 4032)
+		if div_clk > 0 then
+			div_clk		<= div_clk - 1;
+			tick_clk(3) <= '0';
+			tick_clk(4) <= '0';
+			tick_clk(5) <= '0';
+		else
+			div_clk		<= x"fc0";
+			tick_clk(3) <= '1';
+			tick_clk(4) <= '1';
+			tick_clk(5) <= '1';
+		end if;
+	end process;
+	
+	-- audio output process
+	audio_out_proc : process
 	begin
 		wait until rising_edge(clk_audio);
 		
---		-- detect audio
---		-- tape
---		if tape_out_old /= tape_out_sig and tape_out_sig = '1' and tapeEn = '1' then
---			sig_noise(1) <= '1';
---		end if;
---		tape_out_old <= tape_out_sig;
---		-- audio out 0
---		if ctcTcTo_old(0) /= ctc_to(0) and ctc_to(0) = '1' and audioEn_n = '0' then
---			sig_noise(0) <= '1';
---		end if;
---		ctcTcTo_old(0) <= ctc_to(0);
---		-- audio out 1
---		if ctcTcTo_old(1) /= ctc_to(1) and ctc_to(1) = '1' and audioEn_n = '0' then
---			sig_noise(1) <= '1';
---		end if;
---		ctcTcTo_old(1) <= ctc_to(1);
---		
---		-- play audio
-		divide_frq <= divide_frq + 1;
-		if divide_frq(4 downto 0) = b"00000" then
-			if sig_noise(0) = '1' then
-				sig_noise(0) <= '0';
-				level(0) <= not level(0);
-				AUDIO_L <= level(0) & level(0) & level(0) & b"0000000000000";
-			end if;
-			if sig_noise(1) = '1' then
-				sig_noise(1) <= '0';
-				level(1) <= not level(1);
-				AUDIO_R <= level(1) & level(1) & level(1) & b"0000000000000";
-			end if;
+		-- clock crossing
+		audio_out_b <= audio_out_a;
+		audio_out   <= audio_out_b;
+	
+		-- play audio
+		if audio_out = '1' then
+			AUDIO_L <= x"ff00";
+			AUDIO_R <= x"ff00";
+		else
+			AUDIO_L <= x"0000";
+			AUDIO_R <= x"0000";
 		end if;
 	end process;
+	
+	-- 8253 channel components
+	pit_channels: for i in 0 to 5 generate
+        pit_channel : entity work.pit_channel
+        port map (
+            clk			=> clk_sys,
+				tick_cpu		=> tick_cpu,
+				tick_clk		=> tick_clk(i),
+            reset_n 		=> reset_n,
+				
+				load_cnt		=> load_cnt(i),
+				set_mode		=> set_mode(i),
+				mode_in		=> tmp_mode,
+				cnt_in		=> tmp_count,
+				
+				gate_in		=> counter_gate(i),
+				counter_out => counter_out(i)
+        );
+	end generate;
 end;

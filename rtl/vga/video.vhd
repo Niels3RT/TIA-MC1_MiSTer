@@ -32,7 +32,7 @@ entity video is
 			tick_vid			: in  std_logic;
 			reset_n			: in  std_logic;
 			
-			ce_pix			: out  std_logic;
+			ce_pix			: out std_logic;
 
 			vgaRed			: out std_logic_vector(7 downto 0);
 			vgaGreen			: out std_logic_vector(7 downto 0);
@@ -43,7 +43,7 @@ entity video is
 			vgaVBlank		: out std_logic;
 			
 			cpuWR_n			: in  std_logic;
-			cpuStatus		: in std_logic_vector(7 downto 0);
+			cpuStatus		: in  std_logic_vector(7 downto 0);
 			cpuAddr			: in  std_logic_vector(15 downto 0);
 			cpuDIn			: in  std_logic_vector(7 downto 0);
 			
