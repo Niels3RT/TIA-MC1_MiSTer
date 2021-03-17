@@ -8,10 +8,6 @@
 					"strict" : false
 				},
 				{
-					"name" : "HDMI_TX_D[12]",
-					"strict" : false
-				},
-				{
 					"name" : "HDMI_TX_D[13]",
 					"strict" : false
 				},
@@ -76,10 +72,6 @@
 					"strict" : false
 				},
 				{
-					"name" : "LED_HDD",
-					"strict" : false
-				},
-				{
 					"name" : "HDMI_I2C_SCL",
 					"strict" : false
 				},
@@ -93,6 +85,10 @@
 				},
 				{
 					"name" : "HDMI_I2S",
+					"strict" : false
+				},
+				{
+					"name" : "IO_SCL",
 					"strict" : false
 				},
 				{
@@ -141,6 +137,10 @@
 				},
 				{
 					"name" : "HDMI_TX_D[11]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[12]",
 					"strict" : false
 				},
 				{
@@ -220,15 +220,15 @@
 					"strict" : false
 				},
 				{
+					"name" : "LED_HDD",
+					"strict" : false
+				},
+				{
 					"name" : "LED_POWER",
 					"strict" : false
 				},
 				{
 					"name" : "SD_SPI_CS",
-					"strict" : false
-				},
-				{
-					"name" : "IO_SCL",
 					"strict" : false
 				},
 				{

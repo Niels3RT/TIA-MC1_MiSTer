@@ -96,7 +96,7 @@ begin
 		-- start pixel color output
 		if in_draw_pixel = '1' then
 			-- sprite hit?
-			if attrib(0) = '0' and in_screen_x >= pos_x and in_screen_x < pos_x+16 and in_screen_y >= pos_y and in_screen_y < pos_y+16 then
+			if attrib(0) = '0' and (pos_x+15-in_screen_x) < 16 and (pos_y+15-in_screen_y) < 16 then
 				-- calc in sprite positions
 				pos_ix <= in_screen_x(7 downto 0) - pos_x;
 				pos_iy <= in_screen_y(7 downto 0) - pos_y;

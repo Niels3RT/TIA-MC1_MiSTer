@@ -10,6 +10,6 @@ A short [video of the arcade in action](https://www.youtube.com/watch?v=bwcVSt5q
 
 ## The MiSTer Core
 
-There are a few things off (like the sprite behaviour on the edge of the playing field in Snezhnaja Koroleva), but the core is playable.
+There may be a few things off, but the core is playable.
 
 The first 2 buttons are for game inputs, the 3rd is used for coin.
