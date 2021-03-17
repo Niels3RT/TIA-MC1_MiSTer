@@ -59,13 +59,10 @@ entity tiamc1 is
 		
 		USER_OUT			: out std_logic_vector(6 downto 0);
 		
-		hps_status		: in  std_logic_vector(31 downto 0);
-		ioctl_download	: in  std_logic;
-		ioctl_index		: in  std_logic_vector(7 downto 0);
-		ioctl_wr			: in  std_logic;
-		ioctl_addr		: in  std_logic_vector(24 downto 0);
-		ioctl_data		: in  std_logic_vector(7 downto 0);
-		ioctl_wait		: out  std_logic
+		dn_addr			: in std_logic_vector(19 downto 0);
+		dn_data			: in std_logic_vector(7 downto 0);
+		dn_wr				: in std_logic;
+		tno				: in std_logic_vector(7 downto 0)
     );
 end tiamc1;
 
@@ -137,8 +134,6 @@ begin
 
 	-- reset
 	cpuReset_n <= '0' when resetDelay /= 0 else '1';
-	
-	ioctl_wait <= '0';
 	
 	--USER_OUT(1 downto 0) <= (others => '1');
 	--USER_OUT(6 downto 6) <= (others => '1');
@@ -233,7 +228,12 @@ begin
 			ram_char0_data => ram_char0_data,
 			ram_char1_data => ram_char1_data,
 			ram_char2_data => ram_char2_data,
-			ram_char3_data => ram_char3_data
+			ram_char3_data => ram_char3_data,
+			
+			dn_addr		=> dn_addr,
+			dn_data		=> dn_data,
+			dn_wr			=> dn_wr,
+			tno			=> tno
 		);
 
 	-- memory controller
@@ -260,7 +260,12 @@ begin
 			ram_char0_data => ram_char0_data,
 			ram_char1_data => ram_char1_data,
 			ram_char2_data => ram_char2_data,
-			ram_char3_data => ram_char3_data
+			ram_char3_data => ram_char3_data,
+			
+			dn_addr		=> dn_addr,
+			dn_data		=> dn_data,
+			dn_wr			=> dn_wr,
+			tno			=> tno
 			
 			--out_dbg		=> TMP_DBG
 		);

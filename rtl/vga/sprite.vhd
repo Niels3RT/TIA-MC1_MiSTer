@@ -127,11 +127,20 @@ begin
 									& sp_data_a(to_integer(not pos_iy(3 downto 0) & pos_ix(3)))(to_integer(not pos_ix(2 downto 0)));
 				end if;
 			else
-				-- sprite flip x
-				out_color <=  sp_data_d(to_integer(pos_iy(3 downto 0) & not pos_ix(3)))(to_integer(pos_ix(2 downto 0)))
-								& sp_data_c(to_integer(pos_iy(3 downto 0) & not pos_ix(3)))(to_integer(pos_ix(2 downto 0)))
-								& sp_data_b(to_integer(pos_iy(3 downto 0) & not pos_ix(3)))(to_integer(pos_ix(2 downto 0)))
-								& sp_data_a(to_integer(pos_iy(3 downto 0) & not pos_ix(3)))(to_integer(pos_ix(2 downto 0)));
+				-- flip y
+				if attrib(1) = '1' then
+					-- sprite flip x
+					out_color <=  sp_data_d(to_integer(pos_iy(3 downto 0) & not pos_ix(3)))(to_integer(pos_ix(2 downto 0)))
+									& sp_data_c(to_integer(pos_iy(3 downto 0) & not pos_ix(3)))(to_integer(pos_ix(2 downto 0)))
+									& sp_data_b(to_integer(pos_iy(3 downto 0) & not pos_ix(3)))(to_integer(pos_ix(2 downto 0)))
+									& sp_data_a(to_integer(pos_iy(3 downto 0) & not pos_ix(3)))(to_integer(pos_ix(2 downto 0)));
+				else
+					-- sprite flip y
+					out_color <=  sp_data_d(to_integer(not pos_iy(3 downto 0) & not pos_ix(3)))(to_integer(not pos_ix(2 downto 0)))		-- x and y
+									& sp_data_c(to_integer(not pos_iy(3 downto 0) & not pos_ix(3)))(to_integer(not pos_ix(2 downto 0)))
+									& sp_data_b(to_integer(not pos_iy(3 downto 0) & not pos_ix(3)))(to_integer(not pos_ix(2 downto 0)))
+									& sp_data_a(to_integer(not pos_iy(3 downto 0) & not pos_ix(3)))(to_integer(not pos_ix(2 downto 0)));
+				end if;
 			end if;
 		end if;
 	end process;

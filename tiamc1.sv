@@ -221,10 +221,8 @@ wire [31:0] joystick_0;
 
 wire        ioctl_wr;
 wire [24:0] ioctl_addr;
-wire  [7:0] ioctl_data;
+wire  [7:0] ioctl_dout;
 wire  [7:0] ioctl_index;
-wire        ioctl_download;
-reg         ioctl_req_wr;
 
 hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 (
@@ -242,12 +240,10 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	
 	.joystick_0(joystick_0),
 	
-	.ioctl_download(ioctl_download),
-	.ioctl_index(ioctl_index),
 	.ioctl_wr(ioctl_wr),
 	.ioctl_addr(ioctl_addr),
-	.ioctl_dout(ioctl_data),
-	.ioctl_wait(ioctl_req_wr)
+	.ioctl_dout(ioctl_dout),
+	.ioctl_index(ioctl_index)
 );
 
 ///////////////////////   CLOCKS   ///////////////////////////////
@@ -272,6 +268,12 @@ wire VBlank;
 wire VSync;
 wire ce_pix;
 wire [7:0] video;
+reg  [7:0] tno = 0;
+
+// Retrieve Title No.
+always @(posedge clk_sys) begin
+   if (ioctl_wr & (ioctl_index==1)) tno <= ioctl_dout;
+end
 
 tiamc1 tiamc1
 (
@@ -304,13 +306,10 @@ tiamc1 tiamc1
 	
 	.USER_OUT(USER_OUT),
 	
-	.hps_status(status),
-	.ioctl_download(ioctl_download),
-	.ioctl_index(ioctl_index),
-	.ioctl_wr(ioctl_wr),
-	.ioctl_addr(ioctl_addr),
-	.ioctl_data(ioctl_data),
-	.ioctl_wait(ioctl_req_wr)
+	.dn_addr(ioctl_addr[19:0]),
+	.dn_data(ioctl_dout),
+	.dn_wr(ioctl_wr && !ioctl_index),
+	.tno(tno)
 );
 
 assign CLK_VIDEO = clk_sys;

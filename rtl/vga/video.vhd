@@ -53,7 +53,12 @@ entity video is
 			ram_char0_data	: in  std_logic_vector(7 downto 0);
 			ram_char1_data	: in  std_logic_vector(7 downto 0);
 			ram_char2_data	: in  std_logic_vector(7 downto 0);
-			ram_char3_data	: in  std_logic_vector(7 downto 0)
+			ram_char3_data	: in  std_logic_vector(7 downto 0);
+			
+			dn_addr			: in std_logic_vector(19 downto 0);
+			dn_data			: in std_logic_vector(7 downto 0);
+			dn_wr				: in std_logic;
+			tno				: in std_logic_vector(7 downto 0)
 			);
 end video;
 
@@ -111,11 +116,17 @@ architecture rtl of video is
 	signal cnt_v			: unsigned(11 downto 0) := (others => '0');
 
 	-- roms
-	signal sprom_adr		: std_logic_vector(12 downto 0);
-	signal sprom_a2_data : std_logic_vector(7 downto 0);
-	signal sprom_a3_data : std_logic_vector(7 downto 0);
-	signal sprom_a5_data : std_logic_vector(7 downto 0);
-	signal sprom_a6_data : std_logic_vector(7 downto 0);
+	signal sprom_adr			: std_logic_vector(12 downto 0);
+	signal sprom_adr_fin		: std_logic_vector(12 downto 0);
+	signal sprom_a2_data 	: std_logic_vector(7 downto 0);
+	signal sprom_a2_we_n		: std_logic;
+	signal sprom_a3_data 	: std_logic_vector(7 downto 0);
+	signal sprom_a3_we_n		: std_logic;
+	signal sprom_a5_data 	: std_logic_vector(7 downto 0);
+	signal sprom_a5_we_n		: std_logic;
+	signal sprom_a6_data 	: std_logic_vector(7 downto 0);
+	signal sprom_a6_we_n		: std_logic;
+	signal sprom_data_in		: std_logic_vector(7 downto 0);
 	
 	-- palette stuff
 	signal palrom_adr		: std_logic_vector(7 downto 0);
@@ -338,37 +349,73 @@ begin
 				in_data_adr		=> sp_data_adr
         );
 	end generate;
-
-	-- sprite rom a2
-	sprom_a2 : entity work.rom_a2
+	
+	-- fill sprite rom
+	sprom_a2_we_n <=	'0' when dn_wr = '1' and dn_addr >= x"00000" and dn_addr < x"02000" else '1';
+	sprom_a3_we_n <=	'0' when dn_wr = '1' and dn_addr >= x"02000" and dn_addr < x"04000" else '1';
+	sprom_a5_we_n <=	'0' when dn_wr = '1' and dn_addr >= x"04000" and dn_addr < x"06000" else '1';
+	sprom_a6_we_n <=	'0' when dn_wr = '1' and dn_addr >= x"06000" and dn_addr < x"08000" else '1';
+	sprom_data_in <=  dn_data when dn_wr = '1' else x"00";
+	sprom_adr_fin <=	dn_addr(12 downto 0) when dn_wr = '1' else sprom_adr;
+	
+	-- sprite rom/ram a2
+	sram_rom_a2 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
 		port map (
-			clk => clk_sys,
-			addr => sprom_adr,
-			data => sprom_a2_data
+			clk  => clk_sys,
+			addr => sprom_adr_fin,
+			din  => sprom_data_in,
+			dout => sprom_a2_data,
+			ce_n => '0', 
+			we_n => sprom_a2_we_n
+		);
+		
+	-- sprite rom/ram a3
+	sram_rom_a3 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
+		port map (
+			clk  => clk_sys,
+			addr => sprom_adr_fin,
+			din  => sprom_data_in,
+			dout => sprom_a3_data,
+			ce_n => '0', 
+			we_n => sprom_a3_we_n
 		);
 	
-	-- sprite rom a3
-	sprom_a3 : entity work.rom_a3
+	-- sprite rom/ram a5
+	sram_rom_a5 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
 		port map (
-			clk => clk_sys,
-			addr => sprom_adr,
-			data => sprom_a3_data
+			clk  => clk_sys,
+			addr => sprom_adr_fin,
+			din  => sprom_data_in,
+			dout => sprom_a5_data,
+			ce_n => '0', 
+			we_n => sprom_a5_we_n
 		);
 	
-	-- sprite rom a5
-	sprom_a5 : entity work.rom_a5
+	-- sprite rom/ram a6
+	sram_rom_a6 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
 		port map (
-			clk => clk_sys,
-			addr => sprom_adr,
-			data => sprom_a5_data
-		);
-	
-	-- sprite rom a6
-	sprom_a6 : entity work.rom_a6
-		port map (
-			clk => clk_sys,
-			addr => sprom_adr,
-			data => sprom_a6_data
+			clk  => clk_sys,
+			addr => sprom_adr_fin,
+			din  => sprom_data_in,
+			dout => sprom_a6_data,
+			ce_n => '0', 
+			we_n => sprom_a6_we_n
 		);
 	
 	-- palette rom

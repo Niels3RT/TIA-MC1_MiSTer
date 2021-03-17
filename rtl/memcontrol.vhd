@@ -49,7 +49,12 @@ entity memcontrol is
 		ram_char0_data	: out std_logic_vector(7 downto 0);
 		ram_char1_data	: out std_logic_vector(7 downto 0);
 		ram_char2_data	: out std_logic_vector(7 downto 0);
-		ram_char3_data	: out std_logic_vector(7 downto 0)
+		ram_char3_data	: out std_logic_vector(7 downto 0);
+		
+		dn_addr			: in std_logic_vector(19 downto 0);
+		dn_data			: in std_logic_vector(7 downto 0);
+		dn_wr				: in std_logic;
+		tno				: in std_logic_vector(7 downto 0)
 		
 		--out_dbg			: out std_logic_vector(7 downto 0)
 	);
@@ -74,12 +79,22 @@ architecture rtl of memcontrol is
 	signal ram_char3_wr_n_1	: std_logic := '1';
 	
 	-- rom
+	signal rom_adr				: std_logic_vector(12 downto 0);
 	signal rom_g1_data  		: std_logic_vector(7 downto 0);
 	signal rom_g2_data  		: std_logic_vector(7 downto 0);
 	signal rom_g3_data  		: std_logic_vector(7 downto 0);
 	signal rom_g4_data  		: std_logic_vector(7 downto 0);
 	signal rom_g5_data  		: std_logic_vector(7 downto 0);
+	signal rom_g6_data  		: std_logic_vector(7 downto 0);
 	signal rom_g7_data  		: std_logic_vector(7 downto 0);
+	signal rom_g1_we_n		: std_logic := '1';
+	signal rom_g2_we_n		: std_logic := '1';
+	signal rom_g3_we_n		: std_logic := '1';
+	signal rom_g4_we_n		: std_logic := '1';
+	signal rom_g5_we_n		: std_logic := '1';
+	signal rom_g6_we_n		: std_logic := '1';
+	signal rom_g7_we_n		: std_logic := '1';
+	signal rom_gx_data_in	: std_logic_vector(7 downto 0);
 	
 	-- rom
 	signal bs_ctrl		  		: std_logic_vector(7 downto 0);
@@ -153,7 +168,7 @@ begin
 				elsif	cpuAddr <  x"6000" then	cpuDOut <= rom_g3_data;		-- rom g3
 				elsif	cpuAddr <  x"8000" then	cpuDOut <= rom_g4_data;		-- rom g4
 				elsif	cpuAddr <  x"a000" then	cpuDOut <= rom_g5_data;		-- rom g5
-				elsif	cpuAddr <  x"c000" then	cpuDOut <= x"00";				-- rom g6, empty
+				elsif	cpuAddr <  x"c000" then	cpuDOut <= rom_g6_data;		-- rom g6
 				elsif	cpuAddr <  x"e000" then	cpuDOut <= rom_g7_data;		-- rom g7
 				elsif	cpuAddr >= x"e000" then cpuDOut <= ram_do;			-- main ram
 				end if;
@@ -298,51 +313,144 @@ begin
 			wr2_n => '1'
 		);
 	
-	-- rom_g1
-	rom_g1 : entity work.rom_g1
+	-- fill sprite rom
+	rom_g1_we_n		<=	'0' when dn_wr = '1' and dn_addr >= x"08000" and dn_addr < x"0a000" and tno = x"01" else	-- Konek Gorbunok
+							'0' when dn_wr = '1' and dn_addr >= x"08000" and dn_addr < x"0a000" and tno = x"02" else	-- SOS
+							'0' when dn_wr = '1' and dn_addr >= x"08000" and dn_addr < x"0a000" and tno = x"03" else	-- Snezhnaja Koroleva
+							'0' when dn_wr = '1' and dn_addr >= x"08000" and dn_addr < x"0a000" and tno = x"04" else	-- Billiard
+							'0' when dn_wr = '1' and dn_addr >= x"08000" and dn_addr < x"0a000" and tno = x"05" else	-- Gorodki
+							'1';
+	rom_g2_we_n		<=	'0' when dn_wr = '1' and dn_addr >= x"0a000" and dn_addr < x"0c000" and tno = x"01" else	-- Konek Gorbunok
+							'0' when dn_wr = '1' and dn_addr >= x"0a000" and dn_addr < x"0c000" and tno = x"02" else	-- SOS
+							'0' when dn_wr = '1' and dn_addr >= x"0a000" and dn_addr < x"0c000" and tno = x"03" else	-- Snezhnaja Koroleva
+							'0' when dn_wr = '1' and dn_addr >= x"0a000" and dn_addr < x"0c000" and tno = x"04" else	-- Billiard
+							'0' when dn_wr = '1' and dn_addr >= x"0a000" and dn_addr < x"0c000" and tno = x"05" else	-- Gorodki
+							'1';
+	rom_g3_we_n		<=	'0' when dn_wr = '1' and dn_addr >= x"0c000" and dn_addr < x"0e000" and tno = x"01" else	-- Konek Gorbunok
+							'0' when dn_wr = '1' and dn_addr >= x"0c000" and dn_addr < x"0e000" and tno = x"02" else	-- SOS
+							'0' when dn_wr = '1' and dn_addr >= x"0c000" and dn_addr < x"0e000" and tno = x"03" else	-- Snezhnaja Koroleva
+							'0' when dn_wr = '1' and dn_addr >= x"0c000" and dn_addr < x"0e000" and tno = x"05" else	-- Gorodki
+							'1';
+	rom_g4_we_n		<=	'0' when dn_wr = '1' and dn_addr >= x"0e000" and dn_addr < x"10000" and tno = x"01" else	-- Konek Gorbunok
+							'0' when dn_wr = '1' and dn_addr >= x"0e000" and dn_addr < x"10000" and tno = x"02" else	-- SOS
+							'0' when dn_wr = '1' and dn_addr >= x"0e000" and dn_addr < x"10000" and tno = x"03" else	-- Snezhnaja Koroleva
+							'0' when dn_wr = '1' and dn_addr >= x"0e000" and dn_addr < x"10000" and tno = x"05" else	-- Gorodki
+							'1';
+	rom_g5_we_n		<=	'0' when dn_wr = '1' and dn_addr >= x"10000" and dn_addr < x"12000" and tno = x"01" else	-- Konek Gorbunok
+							'0' when dn_wr = '1' and dn_addr >= x"10000" and dn_addr < x"12000" and tno = x"02" else	-- SOS
+							'0' when dn_wr = '1' and dn_addr >= x"10000" and dn_addr < x"12000" and tno = x"03" else	-- Snezhnaja Koroleva
+							'1';
+	rom_g7_we_n		<=	'0' when dn_wr = '1' and dn_addr >= x"12000" and dn_addr < x"14000" and tno = x"01" else	-- Konek Gorbunok
+							'0' when dn_wr = '1' and dn_addr >= x"12000" and dn_addr < x"14000" and tno = x"02" else	-- SOS
+							'0' when dn_wr = '1' and dn_addr >= x"12000" and dn_addr < x"14000" and tno = x"03" else	-- Snezhnaja Koroleva
+							'0' when dn_wr = '1' and dn_addr >= x"0c000" and dn_addr < x"0e000" and tno = x"04" else	-- Billiard
+							'1';
+
+	rom_gx_data_in	<= dn_data when dn_wr = '1' else x"00";
+	rom_adr			<=	dn_addr(12 downto 0) when dn_wr = '1' else tmp_adr(12 downto 0);
+
+	-- rom/ram g1
+	sram_rom_g1 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
 		port map (
-			clk => clk_sys,
-			addr => tmp_adr(12 downto 0),
-			data => rom_g1_data
+			clk  => clk_sys,
+			addr => rom_adr,
+			din  => rom_gx_data_in,
+			dout => rom_g1_data,
+			ce_n => '0', 
+			we_n => rom_g1_we_n
 		);
 	
-	-- rom_g2
-	rom_g2 : entity work.rom_g2
+	-- rom/ram g2
+	sram_rom_g2 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
 		port map (
-			clk => clk_sys,
-			addr => tmp_adr(12 downto 0),
-			data => rom_g2_data
+			clk  => clk_sys,
+			addr => rom_adr,
+			din  => rom_gx_data_in,
+			dout => rom_g2_data,
+			ce_n => '0', 
+			we_n => rom_g2_we_n
 		);
 	
-	-- rom_g3
-	rom_g3 : entity work.rom_g3
+	-- rom/ram g3
+	sram_rom_g3 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
 		port map (
-			clk => clk_sys,
-			addr => tmp_adr(12 downto 0),
-			data => rom_g3_data
+			clk  => clk_sys,
+			addr => rom_adr,
+			din  => rom_gx_data_in,
+			dout => rom_g3_data,
+			ce_n => '0', 
+			we_n => rom_g3_we_n
 		);
 		
-	-- rom_g4
-	rom_g4 : entity work.rom_g4
+	-- rom/ram g4
+	sram_rom_g4 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
 		port map (
-			clk => clk_sys,
-			addr => tmp_adr(12 downto 0),
-			data => rom_g4_data
-		);
-		
-	-- rom_g5
-	rom_g5 : entity work.rom_g5
-		port map (
-			clk => clk_sys,
-			addr => tmp_adr(12 downto 0),
-			data => rom_g5_data
+			clk  => clk_sys,
+			addr => rom_adr,
+			din  => rom_gx_data_in,
+			dout => rom_g4_data,
+			ce_n => '0', 
+			we_n => rom_g4_we_n
 		);
 	
-	-- rom_g7
-	rom_g7 : entity work.rom_g7
+	-- rom/ram g5
+	sram_rom_g5 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
 		port map (
-			clk => clk_sys,
-			addr => tmp_adr(12 downto 0),
-			data => rom_g7_data
+			clk  => clk_sys,
+			addr => rom_adr,
+			din  => rom_gx_data_in,
+			dout => rom_g5_data,
+			ce_n => '0', 
+			we_n => rom_g5_we_n
+		);
+	
+	-- rom/ram g6
+	sram_rom_g6 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
+		port map (
+			clk  => clk_sys,
+			addr => rom_adr,
+			din  => rom_gx_data_in,
+			dout => rom_g6_data,
+			ce_n => '0', 
+			we_n => rom_g6_we_n
+		);
+	
+	-- rom/ram g7
+	sram_rom_g7 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
+		port map (
+			clk  => clk_sys,
+			addr => rom_adr,
+			din  => rom_gx_data_in,
+			dout => rom_g7_data,
+			ce_n => '0', 
+			we_n => rom_g7_we_n
 		);
 end;
