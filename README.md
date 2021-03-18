@@ -13,3 +13,5 @@ A short [video of the arcade in action](https://www.youtube.com/watch?v=bwcVSt5q
 There may be a few things off, but the core is playable.
 
 The first 2 buttons are for game inputs, the 3rd is used for coin.
+
+Gorodki uses a single axis for analog input, the core supports joystick x axis and a paddle. See OSD for config.

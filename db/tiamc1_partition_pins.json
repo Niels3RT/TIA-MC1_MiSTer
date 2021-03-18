@@ -8,6 +8,34 @@
 					"strict" : false
 				},
 				{
+					"name" : "HDMI_TX_D[6]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[7]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[8]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[9]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[10]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[11]",
+					"strict" : false
+				},
+				{
+					"name" : "HDMI_TX_D[12]",
+					"strict" : false
+				},
+				{
 					"name" : "HDMI_TX_D[13]",
 					"strict" : false
 				},
@@ -72,7 +100,7 @@
 					"strict" : false
 				},
 				{
-					"name" : "HDMI_I2C_SCL",
+					"name" : "IO_SCL",
 					"strict" : false
 				},
 				{
@@ -88,7 +116,7 @@
 					"strict" : false
 				},
 				{
-					"name" : "IO_SCL",
+					"name" : "HDMI_I2C_SCL",
 					"strict" : false
 				},
 				{
@@ -113,34 +141,6 @@
 				},
 				{
 					"name" : "HDMI_TX_D[5]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[6]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[7]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[8]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[9]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[10]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[11]",
-					"strict" : false
-				},
-				{
-					"name" : "HDMI_TX_D[12]",
 					"strict" : false
 				},
 				{
@@ -284,11 +284,11 @@
 					"strict" : false
 				},
 				{
-					"name" : "IO_SDA",
+					"name" : "VGA_HS",
 					"strict" : false
 				},
 				{
-					"name" : "VGA_HS",
+					"name" : "IO_SDA",
 					"strict" : false
 				},
 				{
@@ -308,11 +308,11 @@
 					"strict" : false
 				},
 				{
-					"name" : "FPGA_CLK1_50",
+					"name" : "VGA_EN",
 					"strict" : false
 				},
 				{
-					"name" : "VGA_EN",
+					"name" : "FPGA_CLK1_50",
 					"strict" : false
 				},
 				{

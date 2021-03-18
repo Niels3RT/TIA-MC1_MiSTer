@@ -30,39 +30,42 @@ entity tiamc1 is
 			RESET_DELAY : integer := 100000
 		);
 		port(
-		clk_sys			: in  std_logic;		-- 31,5Mhz
-		clkLocked		: in  std_logic;
-		reset_sig		: in  std_logic;
+		clk_sys				: in  std_logic;		-- 31,5Mhz
+		clkLocked			: in  std_logic;
+		reset_sig			: in  std_logic;
 		
-		joystick_0		: in  std_logic_vector(31 downto 0);
+		joystick_0			: in  std_logic_vector(31 downto 0);
+		joystick_analog_0	: in  std_logic_vector(15 downto 0);
+		paddle_0				: in  std_logic_vector(7 downto 0);
+		cfg_analog			: in  std_logic_vector(1 downto 0);
 		
-		scandouble		: in  std_logic;
+		scandouble			: in  std_logic;
 
-		ce_pix			: out  std_logic;
+		ce_pix				: out  std_logic;
 
-		HBlank			: out std_logic;
-		HSync				: out std_logic;
-		VBlank			: out std_logic;
-		VSync				: out std_logic;
+		HBlank				: out std_logic;
+		HSync					: out std_logic;
+		VBlank				: out std_logic;
+		VSync					: out std_logic;
 		
-		VGA_R				: out std_logic_vector(7 downto 0);
-		VGA_G				: out std_logic_vector(7 downto 0);
-		VGA_B				: out std_logic_vector(7 downto 0);
+		VGA_R					: out std_logic_vector(7 downto 0);
+		VGA_G					: out std_logic_vector(7 downto 0);
+		VGA_B					: out std_logic_vector(7 downto 0);
 		
-		clk_audio		: in  std_logic;		-- 24.576 MHz
-		AUDIO_L			: out std_logic_vector(15 downto 0);
-		AUDIO_R			: out std_logic_vector(15 downto 0);
+		clk_audio			: in  std_logic;		-- 24.576 MHz
+		AUDIO_L				: out std_logic_vector(15 downto 0);
+		AUDIO_R				: out std_logic_vector(15 downto 0);
 		
-		LED_USER			: out std_logic;
-		LED_POWER		: out std_logic_vector(1 downto 0);
-		LED_DISK			: out std_logic_vector(1 downto 0);
+		LED_USER				: out std_logic;
+		LED_POWER			: out std_logic_vector(1 downto 0);
+		LED_DISK				: out std_logic_vector(1 downto 0);
 		
-		USER_OUT			: out std_logic_vector(6 downto 0);
+		USER_OUT				: out std_logic_vector(6 downto 0);
 		
-		dn_addr			: in std_logic_vector(19 downto 0);
-		dn_data			: in std_logic_vector(7 downto 0);
-		dn_wr				: in std_logic;
-		tno				: in std_logic_vector(7 downto 0)
+		dn_addr				: in std_logic_vector(19 downto 0);
+		dn_data				: in std_logic_vector(7 downto 0);
+		dn_wr					: in std_logic;
+		tno					: in std_logic_vector(7 downto 0)
     );
 end tiamc1;
 
@@ -329,14 +332,18 @@ begin
 	-- input ios and other
 	inputs : entity work.inputs
 		port map (
-			clk_sys		=> clk_sys,
-			reset_n		=> cpuReset_n,
-			io_out		=> ioDataOut,
-			cpuAddr		=> cpuAddr(7 downto 0),
-			cpuStatus	=> cpuStatus,
-			cpuDBin		=> cpuDBin,
-			joystick_0	=> joystick_0,
-			VBlank		=> VBlank_t
+			clk_sys				=> clk_sys,
+			reset_n				=> cpuReset_n,
+			io_out				=> ioDataOut,
+			cpuAddr				=> cpuAddr(7 downto 0),
+			cpuStatus			=> cpuStatus,
+			cpuDBin				=> cpuDBin,
+			joystick_0			=> joystick_0,
+			joystick_analog_0	=> joystick_analog_0,
+			paddle_0				=> paddle_0,
+			cfg_analog			=> cfg_analog,
+			VBlank				=> VBlank_t,
+			tno					=> tno
 		);
 		
 	-- audio

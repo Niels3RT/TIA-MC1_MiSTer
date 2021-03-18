@@ -209,6 +209,9 @@ localparam CONF_STR = {
 	"-;",
 	"O34,Stereo Mix,None,25%,50%,100%;",
 	"-;",
+	"O5,Analog Input,Joystick,Paddle;",
+	"O6,Invert Axis,Yes,No;",
+	"-;",
 	"T0,Reset;",
 	"R0,Reset and close OSD;",
 	"V,v",`BUILD_DATE 
@@ -218,6 +221,8 @@ wire forced_scandoubler;
 wire  [1:0] buttons;
 wire [31:0] status;
 wire [31:0] joystick_0;
+wire [15:0] joystick_analog_0;
+wire [7:0]  paddle_0;
 
 wire        ioctl_wr;
 wire [24:0] ioctl_addr;
@@ -239,6 +244,8 @@ hps_io #(.STRLEN($size(CONF_STR)>>3)) hps_io
 	.status_menumask({status[5]}),
 	
 	.joystick_0(joystick_0),
+	.joystick_analog_0(joystick_analog_0),
+	.paddle_0(paddle_0),
 	
 	.ioctl_wr(ioctl_wr),
 	.ioctl_addr(ioctl_addr),
@@ -282,6 +289,9 @@ tiamc1 tiamc1
 	.reset_sig(reset),
 	
 	.joystick_0(joystick_0),
+	.joystick_analog_0(joystick_analog_0),
+	.paddle_0(paddle_0),
+	.cfg_analog(status[6:5]),
 
 	.scandouble(forced_scandoubler),
 
