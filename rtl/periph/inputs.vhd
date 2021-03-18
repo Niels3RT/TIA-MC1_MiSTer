@@ -79,31 +79,58 @@ begin
 			axis_x     <= (b"0" & axis_x_tmp(7 downto 1)) + x"58";
 			-- read from inputs io
 			if cpuStatus = x"42" and cpuDBin = '1' then
-				-- in0
-				if	cpuAddr(7 downto 0) = x"d0" then
-					if tno = x"05" then
-						-- analog axis for Gorodki
-						io_out    <= std_logic_vector(axis_x);
-					else
-						-- digital x for all the other games
+				if tno(7) = '0' then
+					-- v1 hardware
+					-- in0
+					if	cpuAddr(7 downto 0) = x"d0" then
+						if tno = x"05" then
+							-- analog axis for Gorodki
+							io_out    <= std_logic_vector(axis_x);
+						else
+							-- digital x for all the other games
+							io_out    <= x"00";
+							io_out(1) <= joystick_0(0);	-- joystick right
+							io_out(5) <= joystick_0(1);	-- joystick left
+						end if;
+					-- in1
+					elsif	cpuAddr(7 downto 0) = x"d1" then
 						io_out    <= x"00";
-						io_out(1) <= joystick_0(0);	-- joystick right
-						io_out(5) <= joystick_0(1);	-- joystick left
+						io_out(1) <= joystick_0(3);		-- joystick up
+						io_out(5) <= joystick_0(2);		-- joystick down
+						io_out(7) <= '0';						-- service
+					-- in2
+					elsif	cpuAddr(7 downto 0) = x"d2" then
+						io_out    <= x"00";
+						io_out(1) <= '1';						-- coin lockout
+						io_out(3) <= '1';						-- ???
+						io_out(4) <= joystick_0(6);		-- coin
+						io_out(5) <= joystick_0(4);		-- joystick button 1
+						io_out(6) <= joystick_0(5);		-- joystick button 2
+						io_out(7) <= VBlank;					-- vblank (waits for 0!)
 					end if;
-				-- in1
-				elsif	cpuAddr(7 downto 0) = x"d1" then
-					io_out    <= x"00";
-					io_out(1) <= joystick_0(3);	-- joystick up
-					io_out(5) <= joystick_0(2);	-- joystick down
-				-- in2
-				elsif	cpuAddr(7 downto 0) = x"d2" then
-					io_out    <= x"00";
-					io_out(1) <= '1';					-- coin lockout
-					io_out(3) <= '1';					-- ???
-					io_out(4) <= joystick_0(6);	-- coin
-					io_out(5) <= joystick_0(4);	-- joystick button 1
-					io_out(6) <= joystick_0(5);	-- joystick button 2
-					io_out(7) <= VBlank;				-- vblank (waits for 0!)
+				else
+					-- v2 hardware
+					-- in0
+					if	cpuAddr(7 downto 0) = x"d0" then
+						io_out    <= x"11";
+						io_out(1) <= not joystick_0(0);	-- joystick right
+						io_out(5) <= not joystick_0(1);	-- joystick left
+					-- in1
+					elsif	cpuAddr(7 downto 0) = x"d1" then
+						io_out    <= x"11";
+						io_out(1) <= not joystick_0(3);	-- joystick up
+						io_out(5) <= not joystick_0(2);	-- joystick down
+						io_out(7) <= '1';						-- service
+					-- in2
+					elsif	cpuAddr(7 downto 0) = x"d2" then
+						io_out    <= x"00";	
+						io_out(1) <= '1';						-- coin lockout
+						io_out(3) <= '1';						-- ???
+						io_out(4) <= joystick_0(6);		-- coin
+						io_out(5) <= not joystick_0(4);	-- joystick button 1
+						io_out(6) <= not joystick_0(5);	-- joystick button 2
+						io_out(7) <= VBlank;					-- vblank (waits for 0!)
+					end if;
 				end if;
 			end if;
 		end if;

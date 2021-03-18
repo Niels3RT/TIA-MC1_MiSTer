@@ -92,7 +92,6 @@ set_global_assignment -name VHDL_FILE roms/palette.vhdl
 set_global_assignment -name VHDL_FILE rtl/t80/T8080se.vhd
 set_global_assignment -name VHDL_FILE rtl/periph/inputs.vhd
 set_global_assignment -name VHDL_FILE rtl/sram.vhd
-set_global_assignment -name VHDL_FILE rtl/periph/intcontroller.vhd
 set_global_assignment -name VHDL_FILE rtl/dualsram.vhd
 set_global_assignment -name VHDL_FILE rtl/vga/video.vhd
 set_global_assignment -name VHDL_FILE rtl/memcontrol.vhd

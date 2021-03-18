@@ -128,8 +128,8 @@ begin
 					mem_state <= idle_wait;
 					-- io writes
 					if cpuStatus = x"10" and cpuWR_n = '0' then
-						-- vram bankswitching control
-						if	cpuAddr(7 downto 0) = x"be" then
+						-- vram bankswitching control, v1 hardware
+						if	tno(7) = '0' and cpuAddr(7 downto 0) = x"be" then
 							bs_ctrl <= cpuDIn;
 						end if;
 					end if;
@@ -138,19 +138,27 @@ begin
 						mem_state <= write_wait;
 						tmp_adr <= cpuAddr;
 						tmp_data_in <= cpuDIn;
-						if		cpuAddr >= x"b000" and cpuAddr < x"b800" then
-							if		bs_ctrl(0) = '0' then
-								ram_vid_wr_n_1	 <= '0';		-- video ram
-							elsif	bs_ctrl(1) = '0' then
-								ram_char0_wr_n_1 <= '0';	-- char ram 0
-							elsif	bs_ctrl(2) = '0' then
-								ram_char1_wr_n_1 <= '0';	-- char ram 1
-							elsif	bs_ctrl(3) = '0' then
-								ram_char2_wr_n_1 <= '0';	-- char ram 2
-							elsif	bs_ctrl(4) = '0' then
-								ram_char3_wr_n_1 <= '0';	-- char ram 3
+						if tno(7) = '0' then
+							-- v1 hardware
+							if		cpuAddr >= x"b000" and cpuAddr < x"b800" then
+								if		bs_ctrl(0) = '0' then
+									ram_vid_wr_n_1	 <= '0';		-- video ram
+								elsif	bs_ctrl(1) = '0' then
+									ram_char0_wr_n_1 <= '0';	-- char ram 0
+								elsif	bs_ctrl(2) = '0' then
+									ram_char1_wr_n_1 <= '0';	-- char ram 1
+								elsif	bs_ctrl(3) = '0' then
+									ram_char2_wr_n_1 <= '0';	-- char ram 2
+								elsif	bs_ctrl(4) = '0' then
+									ram_char3_wr_n_1 <= '0';	-- char ram 3
+								end if;
+							elsif	cpuAddr >= x"e000" then ram_we_n <= '0';	-- main ram
 							end if;
-						elsif	cpuAddr >= x"e000" then ram_we_n <= '0';	-- main ram
+						else
+							-- v2 hardware
+							if		cpuAddr >= x"f000" and cpuAddr < x"f400" then ram_vid_wr_n_1 <= '0';	-- video ram
+							elsif	cpuAddr >= x"c000" and cpuAddr < x"d000" then ram_we_n		 <= '0';	-- main ram
+							end if;
 						end if;
 					-- read memory
 					elsif (cpuStatus = x"a2" or cpuStatus = x"82") and cpuDBin = '1' then
@@ -163,14 +171,27 @@ begin
 			when do_read =>
 				mem_state <= finish;
 				-- decide which DO to send to cpu
-				if		cpuAddr <  x"2000" then	cpuDOut <= rom_g1_data;		-- rom g1
-				elsif	cpuAddr <  x"4000" then	cpuDOut <= rom_g2_data;		-- rom g2
-				elsif	cpuAddr <  x"6000" then	cpuDOut <= rom_g3_data;		-- rom g3
-				elsif	cpuAddr <  x"8000" then	cpuDOut <= rom_g4_data;		-- rom g4
-				elsif	cpuAddr <  x"a000" then	cpuDOut <= rom_g5_data;		-- rom g5
-				elsif	cpuAddr <  x"c000" then	cpuDOut <= rom_g6_data;		-- rom g6
-				elsif	cpuAddr <  x"e000" then	cpuDOut <= rom_g7_data;		-- rom g7
-				elsif	cpuAddr >= x"e000" then cpuDOut <= ram_do;			-- main ram
+				if tno(7) = '0' then
+					-- v1 hardware
+					if		cpuAddr <  x"2000" then	cpuDOut <= rom_g1_data;		-- rom g1
+					elsif	cpuAddr <  x"4000" then	cpuDOut <= rom_g2_data;		-- rom g2
+					elsif	cpuAddr <  x"6000" then	cpuDOut <= rom_g3_data;		-- rom g3
+					elsif	cpuAddr <  x"8000" then	cpuDOut <= rom_g4_data;		-- rom g4
+					elsif	cpuAddr <  x"a000" then	cpuDOut <= rom_g5_data;		-- rom g5
+					elsif	cpuAddr <  x"c000" then	cpuDOut <= rom_g6_data;		-- rom g6
+					elsif	cpuAddr <  x"e000" then	cpuDOut <= rom_g7_data;		-- rom g7
+					elsif	cpuAddr >= x"e000" then cpuDOut <= ram_do;			-- main ram
+					end if;
+				else
+					-- v2 hardware
+					if		cpuAddr <  x"2000" then	cpuDOut <= rom_g1_data;		-- rom g1
+					elsif	cpuAddr <  x"4000" then	cpuDOut <= rom_g2_data;		-- rom g2
+					elsif	cpuAddr <  x"6000" then	cpuDOut <= rom_g3_data;		-- rom g3
+					elsif	cpuAddr <  x"8000" then	cpuDOut <= rom_g4_data;		-- rom g4
+					elsif	cpuAddr <  x"a000" then	cpuDOut <= rom_g5_data;		-- rom g5
+					elsif	cpuAddr <  x"c000" then	cpuDOut <= rom_g6_data;		-- rom g6
+					elsif	cpuAddr >= x"c000" and cpuAddr < x"d000" then cpuDOut <= ram_do;	-- main ram
+					end if;
 				end if;
 			when write_wait =>
 				mem_state <= do_write;
@@ -319,17 +340,20 @@ begin
 							'0' when dn_wr = '1' and dn_addr >= x"08000" and dn_addr < x"0a000" and tno = x"03" else	-- Snezhnaja Koroleva
 							'0' when dn_wr = '1' and dn_addr >= x"08000" and dn_addr < x"0a000" and tno = x"04" else	-- Billiard
 							'0' when dn_wr = '1' and dn_addr >= x"08000" and dn_addr < x"0a000" and tno = x"05" else	-- Gorodki
+							'0' when dn_wr = '1' and dn_addr >= x"08000" and dn_addr < x"0a000" and tno = x"80" else	-- Kot-Rybolov
 							'1';
 	rom_g2_we_n		<=	'0' when dn_wr = '1' and dn_addr >= x"0a000" and dn_addr < x"0c000" and tno = x"01" else	-- Konek Gorbunok
 							'0' when dn_wr = '1' and dn_addr >= x"0a000" and dn_addr < x"0c000" and tno = x"02" else	-- SOS
 							'0' when dn_wr = '1' and dn_addr >= x"0a000" and dn_addr < x"0c000" and tno = x"03" else	-- Snezhnaja Koroleva
 							'0' when dn_wr = '1' and dn_addr >= x"0a000" and dn_addr < x"0c000" and tno = x"04" else	-- Billiard
 							'0' when dn_wr = '1' and dn_addr >= x"0a000" and dn_addr < x"0c000" and tno = x"05" else	-- Gorodki
+							'0' when dn_wr = '1' and dn_addr >= x"0a000" and dn_addr < x"0c000" and tno = x"80" else	-- Kot-Rybolov
 							'1';
 	rom_g3_we_n		<=	'0' when dn_wr = '1' and dn_addr >= x"0c000" and dn_addr < x"0e000" and tno = x"01" else	-- Konek Gorbunok
 							'0' when dn_wr = '1' and dn_addr >= x"0c000" and dn_addr < x"0e000" and tno = x"02" else	-- SOS
 							'0' when dn_wr = '1' and dn_addr >= x"0c000" and dn_addr < x"0e000" and tno = x"03" else	-- Snezhnaja Koroleva
 							'0' when dn_wr = '1' and dn_addr >= x"0c000" and dn_addr < x"0e000" and tno = x"05" else	-- Gorodki
+							'0' when dn_wr = '1' and dn_addr >= x"0c000" and dn_addr < x"0e000" and tno = x"80" else	-- Kot-Rybolov
 							'1';
 	rom_g4_we_n		<=	'0' when dn_wr = '1' and dn_addr >= x"0e000" and dn_addr < x"10000" and tno = x"01" else	-- Konek Gorbunok
 							'0' when dn_wr = '1' and dn_addr >= x"0e000" and dn_addr < x"10000" and tno = x"02" else	-- SOS

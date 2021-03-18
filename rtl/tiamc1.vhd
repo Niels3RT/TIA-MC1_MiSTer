@@ -360,6 +360,7 @@ begin
 			cpuStatus	=> cpuStatus,
 			cpuAddr		=> cpuAddr,
 			cpuDIn		=> cpuDataOut,
+			tno			=> tno,
 			
 			TMP_DBG		=> TMP_DBG
 		);

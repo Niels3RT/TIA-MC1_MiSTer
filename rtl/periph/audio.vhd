@@ -39,6 +39,7 @@ entity audio is
 		cpuStatus		: in  std_logic_vector(7 downto 0);
 		cpuAddr			: in  std_logic_vector(15 downto 0);
 		cpuDIn			: in  std_logic_vector(7 downto 0);
+		tno				: in std_logic_vector(7 downto 0);
 		
 		TMP_DBG			: out std_logic_vector(7 downto 0)
 	);
@@ -134,14 +135,24 @@ begin
 			end if;
 		end if;
 		
-		-- handle gates
-		-- timer 0 gates come from timer 1 outputs
-		counter_gate(0) <= counter_out(3);
-		counter_gate(1) <= counter_out(4);
-		counter_gate(2) <= counter_out(5);
-		
-		-- finalize audio output
-		audio_out_a <= (counter_out(0) xor counter_out(1)) and counter_out(2);
+		-- v1 hardware
+		if tno(7) = '0' then
+			-- finalize audio output
+			audio_out_a <= (counter_out(0) xor counter_out(1)) and counter_out(2);
+			-- handle gates
+			-- timer 0 gates come from timer 1 outputs
+			counter_gate(0) <= counter_out(3);
+			counter_gate(1) <= counter_out(4);
+			counter_gate(2) <= counter_out(5);
+		else
+			-- v2 hardware
+			-- finalize audio output
+			audio_out_a <= counter_out(2);
+			-- timer 0 gates
+			counter_gate(0) <= '1';
+			counter_gate(1) <= '1';
+			counter_gate(2) <= '1';
+		end if;
 		
 		-- pass clock ticks to timers
 		-- timer 0 to 2 work on cpu frequency

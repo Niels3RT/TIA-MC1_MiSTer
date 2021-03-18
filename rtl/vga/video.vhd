@@ -115,7 +115,7 @@ architecture rtl of video is
 	signal cnt_h			: unsigned(11 downto 0) := (others => '0');
 	signal cnt_v			: unsigned(11 downto 0) := (others => '0');
 
-	-- roms
+	-- sprite roms
 	signal sprom_adr			: std_logic_vector(12 downto 0);
 	signal sprom_adr_fin		: std_logic_vector(12 downto 0);
 	signal sprom_a2_data 	: std_logic_vector(7 downto 0);
@@ -127,6 +127,20 @@ architecture rtl of video is
 	signal sprom_a6_data 	: std_logic_vector(7 downto 0);
 	signal sprom_a6_we_n		: std_logic;
 	signal sprom_data_in		: std_logic_vector(7 downto 0);
+	
+	-- tile roms
+	signal trom_adr			: std_logic_vector(12 downto 0);
+	signal trom_adr_fin		: std_logic_vector(12 downto 0);
+	signal trom_1_data 		: std_logic_vector(7 downto 0);
+	signal trom_1_we_n		: std_logic;
+	signal trom_2_data 		: std_logic_vector(7 downto 0);
+	signal trom_2_we_n		: std_logic;
+	signal trom_3_data 		: std_logic_vector(7 downto 0);
+	signal trom_3_we_n		: std_logic;
+	signal trom_4_data 		: std_logic_vector(7 downto 0);
+	signal trom_4_we_n		: std_logic;
+	signal trom_data_in		: std_logic_vector(7 downto 0);
+	signal trom_ctrl		  	: std_logic_vector(7 downto 0);
 	
 	-- palette stuff
 	signal palrom_adr		: std_logic_vector(7 downto 0);
@@ -147,30 +161,33 @@ begin
 		-- io writes
 		if cpuStatus = x"10" and cpuWR_n = '0' then
 			-- palette
-			if		cpuAddr(7 downto 4) = x"a" then
+			if		(tno(7) = '0' and cpuAddr(7 downto 4) = x"a") or (tno(7) = '1' and cpuAddr(7 downto 4) = x"e") then
 				tmp_pal_nr	<= cpuAddr(3 downto 0);
 				tmp_pal_cnt	<= x"3";
 				palrom_adr	<= cpuDIn;
 			-- sprite position y
-			elsif	cpuAddr(7 downto 4) = x"4" then
+			elsif	(tno(7) = '0' and cpuAddr(7 downto 4) = x"4") or (tno(7) = '1' and cpuAddr(7 downto 4) = x"0") then
 				sp_en_n(to_integer(unsigned(cpuAddr(3 downto 0)))) <= '0';
 				sp_update	<= x"01";
 				sp_pos_y		<= unsigned(cpuDIn xor x"ff");
 			-- sprite position x
-			elsif	cpuAddr(7 downto 4) = x"5" then
+			elsif	(tno(7) = '0' and cpuAddr(7 downto 4) = x"5") or (tno(7) = '1' and cpuAddr(7 downto 4) = x"1") then
 				sp_en_n(to_integer(unsigned(cpuAddr(3 downto 0)))) <= '0';
 				sp_update	<= x"02";
 				sp_pos_x		<= unsigned(cpuDIn xor x"ff");
 			-- sprite number
-			elsif	cpuAddr(7 downto 4) = x"6" then
+			elsif	(tno(7) = '0' and cpuAddr(7 downto 4) = x"6") or (tno(7) = '1' and cpuAddr(7 downto 4) = x"2") then
 				sp_nr     	<= cpuDIn xor x"ff";
 				sp_ptr		<= cpuAddr(3 downto 0);
 				sp_cnt_feed	<= x"00";
 			-- sprite attributes
-			elsif	cpuAddr(7 downto 4) = x"7" then
+			elsif	(tno(7) = '0' and cpuAddr(7 downto 4) = x"7") or (tno(7) = '1' and cpuAddr(7 downto 4) = x"3") then
 				sp_en_n(to_integer(unsigned(cpuAddr(3 downto 0)))) <= '0';
 				sp_update	<= x"08";
 				sp_attrib	<= cpuDIn;
+			-- v2 hardware: tile rom bank switch control
+			elsif	tno(7) = '1' and cpuAddr(7 downto 0) = x"f8" then
+				trom_ctrl	<= cpuDIn;
 			end if;
 		end if;
 		
@@ -264,22 +281,43 @@ begin
 		s4 <= s3;
 		if s3.do_stuff = '1' then
 			-- set address in char ram
-			ram_char_adr <= ram_vid_data & std_logic_vector(s3.pos_y(2 downto 0));
+			if tno(7) = '0' then
+				-- v1 hardware
+				ram_char_adr <= ram_vid_data & std_logic_vector(s3.pos_y(2 downto 0));
+			else
+				-- v2 hardware
+				trom_adr <= trom_ctrl(5 downto 4) & ram_vid_data & std_logic_vector(s3.pos_y(2 downto 0));
+			end if;
 		end if;
 		-- stage 4
 		s5 <= s4;
 		-- stage 5
 		s6 <= s5;
 		if s5.do_stuff = '1' then
-			-- chars
-			if		s5.pos_x(2 downto 0) = b"000" then s6.color_ch <= ram_char3_data(7) & ram_char2_data(7) & ram_char1_data(7) & ram_char0_data(7);
-			elsif	s5.pos_x(2 downto 0) = b"001" then s6.color_ch <= ram_char3_data(6) & ram_char2_data(6) & ram_char1_data(6) & ram_char0_data(6);
-			elsif	s5.pos_x(2 downto 0) = b"010" then s6.color_ch <= ram_char3_data(5) & ram_char2_data(5) & ram_char1_data(5) & ram_char0_data(5);
-			elsif	s5.pos_x(2 downto 0) = b"011" then s6.color_ch <= ram_char3_data(4) & ram_char2_data(4) & ram_char1_data(4) & ram_char0_data(4);
-			elsif	s5.pos_x(2 downto 0) = b"100" then s6.color_ch <= ram_char3_data(3) & ram_char2_data(3) & ram_char1_data(3) & ram_char0_data(3);
-			elsif	s5.pos_x(2 downto 0) = b"101" then s6.color_ch <= ram_char3_data(2) & ram_char2_data(2) & ram_char1_data(2) & ram_char0_data(2);
-			elsif	s5.pos_x(2 downto 0) = b"110" then s6.color_ch <= ram_char3_data(1) & ram_char2_data(1) & ram_char1_data(1) & ram_char0_data(1);
-			elsif	s5.pos_x(2 downto 0) = b"111" then s6.color_ch <= ram_char3_data(0) & ram_char2_data(0) & ram_char1_data(0) & ram_char0_data(0);
+			-- chars / tiles
+			if tno(7) = '0' then
+				-- v1 hardware
+				if		s5.pos_x(2 downto 0) = b"000" then s6.color_ch <= ram_char3_data(7) & ram_char2_data(7) & ram_char1_data(7) & ram_char0_data(7);
+				elsif	s5.pos_x(2 downto 0) = b"001" then s6.color_ch <= ram_char3_data(6) & ram_char2_data(6) & ram_char1_data(6) & ram_char0_data(6);
+				elsif	s5.pos_x(2 downto 0) = b"010" then s6.color_ch <= ram_char3_data(5) & ram_char2_data(5) & ram_char1_data(5) & ram_char0_data(5);
+				elsif	s5.pos_x(2 downto 0) = b"011" then s6.color_ch <= ram_char3_data(4) & ram_char2_data(4) & ram_char1_data(4) & ram_char0_data(4);
+				elsif	s5.pos_x(2 downto 0) = b"100" then s6.color_ch <= ram_char3_data(3) & ram_char2_data(3) & ram_char1_data(3) & ram_char0_data(3);
+				elsif	s5.pos_x(2 downto 0) = b"101" then s6.color_ch <= ram_char3_data(2) & ram_char2_data(2) & ram_char1_data(2) & ram_char0_data(2);
+				elsif	s5.pos_x(2 downto 0) = b"110" then s6.color_ch <= ram_char3_data(1) & ram_char2_data(1) & ram_char1_data(1) & ram_char0_data(1);
+				elsif	s5.pos_x(2 downto 0) = b"111" then s6.color_ch <= ram_char3_data(0) & ram_char2_data(0) & ram_char1_data(0) & ram_char0_data(0);
+				end if;
+			else
+				-- v2 hardware
+				if		s5.pos_x(2 downto 0) = b"000" then s6.color_ch <= trom_4_data(7) & trom_3_data(7) & trom_2_data(7) & trom_1_data(7);
+				elsif	s5.pos_x(2 downto 0) = b"001" then s6.color_ch <= trom_4_data(6) & trom_3_data(6) & trom_2_data(6) & trom_1_data(6);
+				elsif	s5.pos_x(2 downto 0) = b"010" then s6.color_ch <= trom_4_data(5) & trom_3_data(5) & trom_2_data(5) & trom_1_data(5);
+				elsif	s5.pos_x(2 downto 0) = b"011" then s6.color_ch <= trom_4_data(4) & trom_3_data(4) & trom_2_data(4) & trom_1_data(4);
+				elsif	s5.pos_x(2 downto 0) = b"100" then s6.color_ch <= trom_4_data(3) & trom_3_data(3) & trom_2_data(3) & trom_1_data(3);
+				elsif	s5.pos_x(2 downto 0) = b"101" then s6.color_ch <= trom_4_data(2) & trom_3_data(2) & trom_2_data(2) & trom_1_data(2);
+				elsif	s5.pos_x(2 downto 0) = b"110" then s6.color_ch <= trom_4_data(1) & trom_3_data(1) & trom_2_data(1) & trom_1_data(1);
+				elsif	s5.pos_x(2 downto 0) = b"111" then s6.color_ch <= trom_4_data(0) & trom_3_data(0) & trom_2_data(0) & trom_1_data(0);
+				end if;
+
 			end if;
 			-- sprites
 			if		sp_color(0)  /= x"f" then s6.color_sp <= sp_color(0);
@@ -416,6 +454,74 @@ begin
 			dout => sprom_a6_data,
 			ce_n => '0', 
 			we_n => sprom_a6_we_n
+		);
+	
+	-- fill tile rom
+	trom_1_we_n  <= '0' when dn_wr = '1' and dn_addr >= x"0e000" and dn_addr < x"10000" and tno(7) = '1' else '1';
+	trom_2_we_n  <= '0' when dn_wr = '1' and dn_addr >= x"10000" and dn_addr < x"12000" and tno(7) = '1' else '1';
+	trom_3_we_n  <= '0' when dn_wr = '1' and dn_addr >= x"12000" and dn_addr < x"14000" and tno(7) = '1' else '1';
+	trom_4_we_n  <= '0' when dn_wr = '1' and dn_addr >= x"14000" and dn_addr < x"16000" and tno(7) = '1' else '1';
+	trom_data_in <= dn_data when dn_wr = '1' else x"00";
+	trom_adr_fin <= dn_addr(12 downto 0) when dn_wr = '1' else trom_adr;
+	
+	-- tile rom/ram 1
+	tram_rom_1 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
+		port map (
+			clk  => clk_sys,
+			addr => trom_adr_fin,
+			din  => trom_data_in,
+			dout => trom_1_data,
+			ce_n => '0', 
+			we_n => trom_1_we_n
+		);
+	
+	-- tile rom/ram 2
+	tram_rom_2 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
+		port map (
+			clk  => clk_sys,
+			addr => trom_adr_fin,
+			din  => trom_data_in,
+			dout => trom_2_data,
+			ce_n => '0', 
+			we_n => trom_2_we_n
+		);
+	
+	-- tile rom/ram 3
+	tram_rom_3 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
+		port map (
+			clk  => clk_sys,
+			addr => trom_adr_fin,
+			din  => trom_data_in,
+			dout => trom_3_data,
+			ce_n => '0', 
+			we_n => trom_3_we_n
+		);
+		
+	-- tile rom/ram 4
+	tram_rom_4 : entity work.sram
+		generic map (
+			AddrWidth => 13,
+			DataWidth => 8
+		)
+		port map (
+			clk  => clk_sys,
+			addr => trom_adr_fin,
+			din  => trom_data_in,
+			dout => trom_4_data,
+			ce_n => '0', 
+			we_n => trom_4_we_n
 		);
 	
 	-- palette rom
