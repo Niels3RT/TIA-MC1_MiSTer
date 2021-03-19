@@ -70,7 +70,6 @@ entity tiamc1 is
 end tiamc1;
 
 architecture struct of tiamc1 is
-	constant NUMINTS			: integer := 2 + 4 + 6 + 2 + 4; -- (M008 + CTC + SIO + PIO + CTC)
 
 	signal cpuReset_n			: std_logic;
 	signal cpuAddr				: std_logic_vector(15 downto 0);
@@ -104,9 +103,6 @@ architecture struct of tiamc1 is
 	signal memDataOut			: std_logic_vector(7 downto 0);
 	
 	signal ioDataOut			: std_logic_vector(7 downto 0);
-
-	signal intPeriph			: std_logic_vector(NUMINTS-1 downto 0);
-	signal intAckPeriph		: std_logic_vector(NUMINTS-1 downto 0);
 	
 	signal resetDelay			: integer range 0 to RESET_DELAY := RESET_DELAY;
 	
@@ -118,19 +114,11 @@ architecture struct of tiamc1 is
 	signal ram_char2_data	: std_logic_vector(7 downto 0);
 	signal ram_char3_data	: std_logic_vector(7 downto 0);
 	
-	--KC LEDs MiSTer temp
-	signal LEDR					: std_logic_vector(15 downto 0) := (others => '0');
-	
-	-- TEMP audio_l debug
-	signal AUDIO_L_DBG		: std_logic_vector(15 downto 0);
-	signal AUDIO_R_DBG		: std_logic_vector(15 downto 0);
-	
 	-- TEMP signals for watching
 	signal HBlank_t			: std_logic;
 	signal HSync_t				: std_logic;
 	signal VBlank_t			: std_logic;
 	signal VSync_t				: std_logic;
-	
 	signal TMP_DBG				: std_logic_vector(7 downto 0) := (others => '1');
 
 begin
@@ -138,47 +126,16 @@ begin
 	-- reset
 	cpuReset_n <= '0' when resetDelay /= 0 else '1';
 	
-	--USER_OUT(1 downto 0) <= (others => '1');
-	--USER_OUT(6 downto 6) <= (others => '1');
-	
---	USER_OUT(0) <= cpuWO_n;
---	USER_OUT(1) <= cpuOUT;
---	USER_OUT(2) <= cpuM1;
---	USER_OUT(3) <= cpuINP;
---	USER_OUT(4) <= cpuMEMR;
---	USER_OUT(5) <= cpuWR_n;
-	
---	USER_OUT(0) <= cpuDataIn(2);
---	USER_OUT(1) <= cpuDataIn(3);
---	USER_OUT(2) <= cpuDataIn(4);
---	USER_OUT(3) <= cpuDataIn(5);
---	USER_OUT(4) <= cpuDataIn(6);
---	USER_OUT(5) <= cpuDataIn(7);
+	-- leds
+	LED_USER  <= not cpuReset_n;
+	LED_POWER <= b"11";
+	LED_DISK  <= b"10";
 
---	USER_OUT(0) <= cpuAddr(10);
---	USER_OUT(1) <= cpuAddr(11);
---	USER_OUT(2) <= cpuAddr(12);
---	USER_OUT(3) <= cpuAddr(13);
---	USER_OUT(4) <= cpuAddr(14);
---	USER_OUT(5) <= cpuAddr(15);
+	-- debug out
+	--USER_OUT(6 downto 0) <= TMP_DBG(6 downto 0);
+	USER_OUT <= b"1111111";
 
-	USER_OUT(0) <= TMP_DBG(0);
-	USER_OUT(1) <= TMP_DBG(1);
-	USER_OUT(2) <= TMP_DBG(2);
-	USER_OUT(3) <= TMP_DBG(3);
-	USER_OUT(4) <= TMP_DBG(4);
-	USER_OUT(5) <= TMP_DBG(5);
-
---	USER_OUT(0) <= VSync_t;
---	USER_OUT(1) <= HSync_t;
---	USER_OUT(2) <= HBlank_t;
---	USER_OUT(3) <= VBlank_t;
---	USER_OUT(4) <= '1';
---	USER_OUT(5) <= '1';
---	USER_OUT(6) <= '1';
-	
-	--USER_OUT(6) <= cpuSync;
-	
+	-- sync
 	HBlank <= HBlank_t;
 	HSync  <= HSync_t;
 	VBlank <= VBlank_t;
@@ -215,10 +172,6 @@ begin
 			vgaVSync		=> VSync_t,
 			vgaHBlank	=> HBlank_t,
 			vgaVBlank	=> VBlank_t,
---			vgaHSync		=> HSync,
---			vgaVSync		=> VSync,
---			vgaHBlank	=> HBlank,
---			vgaVBlank	=> VBlank
 
 			cpuWR_n		=> cpuWR_n,
 			cpuStatus	=> cpuStatus,
@@ -308,25 +261,24 @@ begin
 
 		cpuReady <= '1';
 		if cpuSync = '1' then
-			--cpuReady <= '0';
 			cpuStatus <= cpuDataOut;
-			cpuIntA <= cpuDataOut(0);
-			cpuWO_n <= cpuDataOut(1);
-			cpuHLTA <= cpuDataOut(3);
-			cpuOUT  <= cpuDataOut(4);
-			cpuM1   <= cpuDataOut(5);
-			cpuINP  <= cpuDataOut(6);
-			cpuMEMR <= cpuDataOut(7);
+			cpuIntA  <= cpuDataOut(0);
+			cpuWO_n  <= cpuDataOut(1);
+			cpuHLTA  <= cpuDataOut(3);
+			cpuOUT   <= cpuDataOut(4);
+			cpuM1    <= cpuDataOut(5);
+			cpuINP   <= cpuDataOut(6);
+			cpuMEMR  <= cpuDataOut(7);
 		end if;
 	end process;
 	
 	-- system clocks/ticks
 	sysclock : entity work.sysclock
 		port map (
-			clk_sys		=> clk_sys,
-			reset_n		=> cpuReset_n,
-			tick_cpu		=> tick_cpu,
-			tick_vid		=> tick_vid
+			clk_sys	=> clk_sys,
+			reset_n	=> cpuReset_n,
+			tick_cpu	=> tick_cpu,
+			tick_vid	=> tick_vid
 		);
 	
 	-- input ios and other
