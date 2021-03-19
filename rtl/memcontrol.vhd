@@ -334,7 +334,7 @@ begin
 			wr2_n => '1'
 		);
 	
-	-- fill sprite rom
+	-- fill rom
 	rom_g1_we_n		<=	'0' when dn_wr = '1' and dn_addr >= x"08000" and dn_addr < x"0a000" and tno = x"01" else	-- Konek Gorbunok
 							'0' when dn_wr = '1' and dn_addr >= x"08000" and dn_addr < x"0a000" and tno = x"02" else	-- SOS
 							'0' when dn_wr = '1' and dn_addr >= x"08000" and dn_addr < x"0a000" and tno = x"03" else	-- Snezhnaja Koroleva
