@@ -14,4 +14,4 @@ There may still be a few things off.
 
 The first 2 buttons are for game inputs, the 3rd is used for coin.
 
-Gorodki uses a single axis for analog input, the core supports joystick x axis and a paddle. See OSD for config.
+Gorodki uses a single axis for analog input, the core supports joystick x axis, paddle or spinner. See OSD for config.

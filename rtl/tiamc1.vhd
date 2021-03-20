@@ -37,7 +37,8 @@ entity tiamc1 is
 		joystick_0			: in  std_logic_vector(31 downto 0);
 		joystick_analog_0	: in  std_logic_vector(15 downto 0);
 		paddle_0				: in  std_logic_vector(7 downto 0);
-		cfg_analog			: in  std_logic_vector(1 downto 0);
+		spinner_0			: in  std_logic_vector(8 downto 0);
+		cfg_analog			: in  std_logic_vector(2 downto 0);
 		
 		scandouble			: in  std_logic;
 
@@ -293,6 +294,7 @@ begin
 			joystick_0			=> joystick_0,
 			joystick_analog_0	=> joystick_analog_0,
 			paddle_0				=> paddle_0,
+			spinner_0			=> spinner_0,
 			cfg_analog			=> cfg_analog,
 			VBlank				=> VBlank_t,
 			tno					=> tno

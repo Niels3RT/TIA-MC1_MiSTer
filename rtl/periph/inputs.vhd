@@ -39,15 +39,18 @@ entity inputs is
 		joystick_0			: in  std_logic_vector(31 downto 0);
 		joystick_analog_0	: in  std_logic_vector(15 downto 0);
 		paddle_0				: in  std_logic_vector(7 downto 0);
-		cfg_analog			: in  std_logic_vector(1 downto 0);
+		spinner_0			: in  std_logic_vector(8 downto 0);
+		cfg_analog			: in  std_logic_vector(2 downto 0);
 		VBlank				: in  std_logic;
 		tno					: in std_logic_vector(7 downto 0)
 	);
 end inputs;
 
 architecture rtl of inputs is
-	signal axis_x_tmp		: unsigned(7 downto 0);
+	signal axis_x_tmp		: unsigned(7 downto 0) := x"40";
+	signal axis_x_tmp_b	: unsigned(7 downto 0) := x"98";
 	signal axis_x			: unsigned(7 downto 0);
+	signal spinner_last	: std_logic;
 	
 begin
 	process
@@ -57,26 +60,53 @@ begin
 		if reset_n = '0' then
 		else
 			-- get analog input axis, for Gorodki
-			if cfg_analog(0) = '0' then
+			if cfg_analog(1 downto 0) = b"00" then
 				-- calc analog x axis, from joystick x
-				if cfg_analog(1) = '0' then
+				if cfg_analog(2) = '0' then
 					-- invert
 					axis_x_tmp <= not (unsigned(joystick_analog_0(7 downto 0)) + x"7f");
 				else
 					-- no invert
 					axis_x_tmp <= unsigned(joystick_analog_0(7 downto 0)) + x"7f";
 				end if;
-			else
+			elsif cfg_analog(1 downto 0) = b"01" then
 				-- calc analog x axis, from paddle
-				if cfg_analog(1) = '0' then
+				if cfg_analog(2) = '0' then
 					-- invert
 					axis_x_tmp <= not unsigned(paddle_0);
 				else
 					-- no invert
 					axis_x_tmp <= unsigned(paddle_0);
 				end if;
+			elsif cfg_analog(1 downto 0) = b"10" then
+				-- calc spinner position
+				if spinner_last /= spinner_0(8) then
+					spinner_last <= spinner_0(8);
+					-- calc analog x axis, from spinner
+					if cfg_analog(2) = '0' then
+						-- invert
+						if (unsigned(not spinner_0(7 downto 0)) < x"80" and (axis_x_tmp + unsigned(not spinner_0(6 downto 0) & b"0") + 2 > axis_x_tmp))
+							or (unsigned(not spinner_0(7 downto 0)) > x"80" and (axis_x_tmp + unsigned(not spinner_0(6 downto 0) & b"0") + 2 < axis_x_tmp)) then
+							axis_x_tmp <= axis_x_tmp + unsigned(not spinner_0(6 downto 0) & b"0") + 2;
+						end if;
+					else
+						-- no invert
+						if (unsigned(spinner_0(7 downto 0)) < x"80" and (axis_x_tmp + unsigned(spinner_0(6 downto 0) & b"0") > axis_x_tmp))
+							or (unsigned(spinner_0(7 downto 0)) > x"80" and (axis_x_tmp + unsigned(spinner_0(6 downto 0) & b"0") < axis_x_tmp)) then
+							axis_x_tmp <= axis_x_tmp + unsigned(spinner_0(6 downto 0) & b"0");
+						end if;
+					end if;
+				end if;
 			end if;
-			axis_x     <= (b"0" & axis_x_tmp(7 downto 1)) + x"58";
+			-- keep position within limits
+			axis_x_tmp_b <= (b"0" & axis_x_tmp(7 downto 1)) + x"58";
+			if axis_x_tmp_b < x"60" then
+				axis_x <= x"60";
+			elsif axis_x_tmp_b > x"d0" then
+				axis_x <= x"d0";
+			else
+				axis_x <= axis_x_tmp_b;
+			end if;
 			-- read from inputs io
 			if cpuStatus = x"42" and cpuDBin = '1' then
 				if tno(7) = '0' then
